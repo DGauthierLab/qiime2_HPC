@@ -37,10 +37,10 @@ if [ -n "$2" ]; then
 	
 	echo ""; echo `date` "Reading config file... "
 	echo " "
-	#echo "BEGIN*CONFIG*FILE*****************************************************************************************"
+	echo "BEGIN*CONFIG*FILE*****************************************************************************************"
 #	cat $1
 	cat $2
-	#echo "*********END*CONFIG*FILE*******************************************************************************************"
+	echo "*********END*CONFIG*FILE*******************************************************************************************"
 	
 	echo ""; echo `date` "Reading in variables from config file..."
 	CONFIG=$2
@@ -54,38 +54,33 @@ if [ -n "$2" ]; then
 	ALPHARMIN=$(grep 'qiime diversity alpha-rarefaction --p-min-depth <integer>' $CONFIG | awk '{print $1;}')
 	ALPHARMAX=$(grep 'qiime diversity alpha-rarefaction --p-max-depth <integer>' $CONFIG | awk '{print $1;}')
 	ALPHARSTEPS=$(grep 'qiime diversity alpha-rarefaction --p-steps <integer>' $CONFIG | awk '{print $1;}')
-	
-	FILTCOV=$(grep '' $CONFIG | awk '{print $1;}')
-	FILTTAX=$(grep '' $CONFIG | awk '{print $1;}')
-	FILTMETA=$(grep '' $CONFIG | awk '{print $1;}')
-	TFILT1=$(grep '' $CONFIG | awk '{print $1;}')
-	TMODE1=$(grep '' $CONFIG | awk '{print $1;}')	
-	TFILT2=$(grep '' $CONFIG | awk '{print $1;}')
-	TMODE2=$(grep '' $CONFIG | awk '{print $1;}')
-	TFILT3=$(grep '' $CONFIG | awk '{print $1;}')
-	TMODE3=$(grep '' $CONFIG | awk '{print $1;}')
-	MFILT=$(grep '' $CONFIG | awk '{print $1;}')
+	FILTCOV=$(grep 'qiime feature-table filter-samples --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
+	FILTTAX=$(grep 'FILTTAX filename variable <string> ' $CONFIG | awk '{print $1;}')
+	FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
+	TFILT1=$(grep 'taxonomy filtration argument 1 <exclude/include> <"string">' $CONFIG | awk '{print $1;}')
+	TMODE1=$(grep 'taxonomy filtration argument 1 <exact/contains> <"string">' $CONFIG | awk '{print $1;}')
+	TFILT2=$(grep 'taxonomy filtration argument 2 <exclude/include> <"string">' $CONFIG | awk '{print $1;}')
+	TMODE2=$(grep 'taxonomy filtration argument 2 <exact/contains> <"string">' $CONFIG | awk '{print $1;}')
+	TFILT3=$(grep 'taxonomy filtration argument 3 <exclude/include> <"string">' $CONFIG | awk '{print $1;}')
+	TMODE3=$(grep 'taxonomy filtration argument 3 <exact/contains> <"string">' $CONFIG | awk '{print $1;}')
+	MFILT=$(grep 'metadata filtration argument 1  <mySQL where statement>' $CONFIG | awk '{print $1;}')
+	DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
+	DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
+	BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string> ' $CONFIG | awk '{print $1;}')
+	PERMFORM=$(grep 'qiime diversity adonis --p-formula <string>  ' $CONFIG | awk '{print $1;}')
+	COLV=$(grep 'qiime taxa collapse --p-level <integer>' $CONFIG | awk '{print $1;}')
+fi
+echo $CONFIG
+echo $FTRUNC
+echo $FILTCOV
+echo $FUNKTION
 
-	DMALPHA=$(grep '' $CONFIG | awk '{print $1;}')
-	DMBETA=$(grep '' $CONFIG | awk '{print $1;}')
-	
-	BETACOMPVAR=$(grep '' $CONFIG | awk '{print $1;}')
-	PERMFORM=$(grep '' $CONFIG | awk '{print $1;}')
-
-	COLV=$(grep '' $CONFIG | awk '{print $1;}')
 
 
-if [ "$FUNKTION" == "1_setup_qiime2" ]; then
-
-##SCRIPT1: setup_qiime2
-#Folder setup for QIIME2 processing on Wahab HPC cluster
-
-#SBATCH --job-name=folder_setup
-#SBATCH -o qiime2-%j.out
-#SBATCH --time=00:00:00
-#SBATCH --cpus-per-task=32
-
-mkdir -p metadata
+if [[ $FTRUNC -eq 275 ]];then
+echo "Running 1_setup_qiime2"
+echo "Folder setup for QIIME2 processing on Wahab HPC cluster"
+mkdir metadata
 mkdir -p fastq
 
 ##Subsequent to running this file:
@@ -93,15 +88,15 @@ mkdir -p fastq
 echo "place tab-delimited .txt metadata file in metadata folder"
 echo "place all .fastq files (.gz is OK) in fastq folder.  Ensure that only .fastq files are present in the folder"
 
-##
-
-elif [ "$FUNKTION" == "1a_feature_classifier_qiime2" ]; then
-
+elif [ $FUNKTION = "FOO" ]; then
+echo "running"
 ##SCRIPT1a: 1a_feature_classifier_qiime2
 
 #This script will train the feature classifier for use in taxonomy analysis.  
 #see: https://docs.qiime2.org/2021.4/tutorials/feature-classifier/ for details
- 
+
+echo "end"
+
 mkdir training_feature_classifiers
 
 crun qiime rescript get-silva-data \
@@ -150,6 +145,7 @@ crun qiime feature-classifier fit-classifier-naive-bayes \
 --i-reference-reads ref-seqs_silva138_NR99.qza \
 --i-reference-taxonomy silva-138.1-ssu-nr99-tax_derep.qza \
 --o-classifier slv_ssu_138.1_classifier.qza
+
 
 elif [ "$FUNKTION" == "2_file_import_qiime2" ]; then
 
@@ -350,7 +346,7 @@ crun qiime diversity core-metrics-phylogenetic \
 ##change filenames to reflect filtering parameters
 cd core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA} &&
 for f in * ;
-do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTMETA}.qz\2/g") ; 
+do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTMETA}.qz\2/g") ;
 done
 cd ..
 
@@ -363,9 +359,10 @@ crun qiime taxa barplot \
 
 elif [ "$FUNKTION" == "5_univariate_stats_qiime2" ]; then
 
-#This script is designed to perform post-filtration analyses 
+#This script is designed to perform post-filtration analyses
 #Sections are intended to be run sequentially, and should be commented out as needed
-
+echo "5 running"
+fi
 if [ -z $FILTCOV ]
 then
 echo "coverage filter not specified"
@@ -488,4 +485,7 @@ crun qiime composition ancom \
 --m-metadata-column $BETACOMPVAR \
 --o-visualization comp-collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qzv
 
+else
+
+echo "nothing to do"
 fi

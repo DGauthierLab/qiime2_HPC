@@ -15,7 +15,7 @@ module load container_env qiime2/2022.08
 #this will trim the fq.gz files using the settings in config.4.all
 #it is assumed that the directory you run this script from has the 
 #fq.gz files
-bash qiime2.bash 1_setup_qiime2 config.qiime2
+bash qiime2_HPC/qiime2.bash 1_setup_qiime2 qiime2_HPC/config.qiime2
 
 #this will assemble the fq.gz files in the mkREF and mkBAM directories that were
 #created by the trim function.  We have to cd to the mkREF directory
