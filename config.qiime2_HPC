@@ -1,0 +1,56 @@
+CONFIG FILE FOR QIIME2_HPC
+
+----------Filepaths---------------------------------------------------------------
+
+.fastq files: /cm/shared/courses/gauthier/Microbiome/
+
+metadata files: /cm/shared/courses/gauthier/Microbiome/
+
+__________________________________________________________________________________
+
+----------Script 3: preprocessing-------------------------------------------------------------------------------------------------------------------------
+275		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
+275             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
+17		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
+21              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
+2		qiime dada2 denoise-paired --p-min-fold-parent-over-abundance <integer>		Set fold-overabundance for chimera detection
+50		qiime diversity alpha-rarefaction --p-steps <integer>				# of sampling steps between min and max depth (below)
+1000		qiime diversity alpha-rarefaction --p-min-depth	<integer>			minimum sampling depth for alpha rarefaction
+50000		qiime diversity alpha-rarefaction --p-max-depth <integer>			maximum sampling depth for alpha rarefaction
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------Script 4: filter and run core metrics-----------------------------------------------------------------------------------------------------------
+10000           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
+allassigned		FILTTAX filename variable <string>						Descriptive string for taxonomy filtration
+nocontrol_wild_noSI	FILTMETA filename variable <string>						Descriptive string for metadata filtration
+
+exclude "unassigned"	taxonomy filtration argument 1 <exclude/include> <"string">
+mode "exact"		taxonomy filtration argument 1 <exact/contains> <"string">
+
+exclude "d__Bacteria"	taxonomy filtration argument 2 <exclude/include> <"string">
+mode "exact"		taxonomy filtration argument 2 <exact/contains> <"string">
+
+exclude "chloroplast"	taxonomy filtration argument 3 <exclude/include> <"string">
+mode "contains"		taxonomy filtration argument 3 <exact/contains> <"string">
+
+where "[Biome] LIKE 'wild caught%' AND NOT [Location] = 'SI'"	metadata filtration argument 1  <mySQL where statement>
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+----------Script 5: filter and run core metrics-----------------------------------------------------------------------------------------------------------
+shannon			alpha diversity metric <string>
+bray_curtis		beta diversity metric <string>
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+----------Script 6: alpha and univariate beta diversity stats---------------------------------------------------------------------------------------------
+Rp_status		comparison variable for univariate beta diversity comparison <string>		Must match metadata heading
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------Script 7: multivariate beta diversity stats-----------------------------------------------------------------------------------------------------
+Location*Rp_status	qiime diversity adonis --p-formula <string>					Use var1+var2 for confounders, var1*var2 for crossed terms
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------Script 8: ANCOM---------------------------------------------------------------------------------------------------------------------------------      
+5			qiime taxa collapse --p-level <integer>			1-Kingdom, 2-Phylum, 3-Class, 4-Order, 5-Family, 6-Genus, 7-Species (no collapse)
+----------------------------------------------------------------------------------------------------------------------------------------------------------
