@@ -9,94 +9,77 @@ echo -e "Contact dgauthie@odu.edu with any problems \n\n "
 
 #with apologies to John Puritz and Chris Bird as this code is pilfered from dDocent
 
-#Determine which script to run
-#1_setup.sbatch
-#1a_feature_classifier_qiime2.sbatch
-#2_file_import_qiime2.sbatch
-#3_preprocessing_qiime2.sbatch
-#4_filter_coremetrics.sbatch
-#5_postfilt_qiime2.sbatch
-#6_ancom_qiime2.sbatch
-
-
 if [ -n "$1" ]; then
-	#getting functions from command line
-	FUNKTION=$(echo $1)
-	echo; echo "Running script $FUNKTION..."
+        #getting functions from command line
+        FUNKTION=$(echo $1)
+        echo; echo "Running script $FUNKTION..."
 else
-	echo ""; echo `date` "ERROR:	qiime2_HPC must be run with 2 arguments, "
-	echo "			qiime2.bash [function] [config file]"
-	exit
+        echo ""; echo `date` "ERROR:    qiime2_HPC must be run with 2 arguments, "
+        echo "                  qiime2.bash [function] [config file]"
+        exit
 fi
 
 
-#load variables from config file
-if [ -n "$2" ]; then
-	echo " "
-	echo `date` "Files output to: " $(pwd)
-	
-	echo ""; echo `date` "Reading config file... "
-	echo " "
-	echo "BEGIN*CONFIG*FILE*****************************************************************************************"
-#	cat $1
-	cat $2
-	echo "*********END*CONFIG*FILE*******************************************************************************************"
-	
-	echo ""; echo `date` "Reading in variables from config file..."
-	CONFIG=$2
-	FASTQ=$(grep '.fastq files:' $CONFIG | awk '{print $1;}')
-	METAPATH=$(grep 'metadata files:' $CONFIG | awk '{print $1;}')
-	FTRUNC=$(grep 'qiime dada2 denoise-paired --p-trunc-len-f <integer>' $CONFIG | awk '{print $1;}')
-	RTRUNC=$(grep 'qiime dada2 denoise-paired --p-trunc-len-r <integer>' $CONFIG | awk '{print $1;}')
-	FTRIM=$(grep 'qiime dada2 denoise-paired --trim-len-f <integer>' $CONFIG | awk '{print $1;}')
-	RTRIM=$(grep 'qiime dada2 denoise-paired --trim-len-r <integer>' $CONFIG | awk '{print $1;}')
-	CHIMERA=$(grep 'qiime dada2 denoise-paired --p-min-fold-parent-over-abundance <integer>' $CONFIG | awk '{print $1;}')
-	ALPHARMIN=$(grep 'qiime diversity alpha-rarefaction --p-min-depth <integer>' $CONFIG | awk '{print $1;}')
-	ALPHARMAX=$(grep 'qiime diversity alpha-rarefaction --p-max-depth <integer>' $CONFIG | awk '{print $1;}')
-	ALPHARSTEPS=$(grep 'qiime diversity alpha-rarefaction --p-steps <integer>' $CONFIG | awk '{print $1;}')
-	FILTCOV=$(grep 'qiime feature-table filter-samples --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
-	FILTTAX=$(grep 'FILTTAX filename variable <string> ' $CONFIG | awk '{print $1;}')
-	FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
-	TFILT1=$(grep 'taxonomy filtration argument 1 <exclude/include> <"string">' $CONFIG | awk '{print $1;}')
-	TMODE1=$(grep 'taxonomy filtration argument 1 <exact/contains> <"string">' $CONFIG | awk '{print $1;}')
-	TFILT2=$(grep 'taxonomy filtration argument 2 <exclude/include> <"string">' $CONFIG | awk '{print $1;}')
-	TMODE2=$(grep 'taxonomy filtration argument 2 <exact/contains> <"string">' $CONFIG | awk '{print $1;}')
-	TFILT3=$(grep 'taxonomy filtration argument 3 <exclude/include> <"string">' $CONFIG | awk '{print $1;}')
-	TMODE3=$(grep 'taxonomy filtration argument 3 <exact/contains> <"string">' $CONFIG | awk '{print $1;}')
-	MFILT=$(grep 'metadata filtration argument 1  <mySQL where statement>' $CONFIG | awk '{print $1;}')
-	DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
-	DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
-	BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string> ' $CONFIG | awk '{print $1;}')
-	PERMFORM=$(grep 'qiime diversity adonis --p-formula <string>  ' $CONFIG | awk '{print $1;}')
-	COLV=$(grep 'qiime taxa collapse --p-level <integer>' $CONFIG | awk '{print $1;}')
+if [ -n $2 ]; then
+        echo " "
+        echo `date` "Files output to: " $(pwd)
+        echo ""; echo `date` "Reading config file... "
+        CONFIG=$2
+        FASTQ=$(grep '.fastq files:' $CONFIG | awk '{print $3;}')
+        METAPATH=$(grep 'metadata files:' $CONFIG | awk '{print $3;}')
+	SILVAVERSION=$(grep 'qiime rescript get-silva-data --p-version <integer>' $CONFIG | awk '{print $1;}') 
+	SILVATRGET=$(grep 'qiime rescript get-silva-data --p-target <string>' $CONFIG | awk '{print $1;}')
+	FPRIMER=$(grep 'qiime feature-classifier extract-reads --p-f-primer' $CONFIG | awk '{print $1;}')
+	RPRIMER=$(grep 'qiime feature-classifier extract-reads --p-r-primer' $CONFIG | awk '{print $1;}')
+	MAXAMP=$(grep 'qiime feature-classifier extract-reads --p-max-length' $CONFIG | awk '{print $1;}')
+	MINAMP=$(grep 'qiime feature-classifier extract-reads --p-min-length' $CONFIG | awk '{print $1;}')
+       	FTRUNC=$(grep 'qiime dada2 denoise-paired --p-trunc-len-f <integer>' $CONFIG | awk '{print $1;}')
+        RTRUNC=$(grep 'qiime dada2 denoise-paired --p-trunc-len-r <integer>' $CONFIG | awk '{print $1;}')
+        FTRIM=$(grep 'qiime dada2 denoise-paired --trim-len-f <integer>' $CONFIG | awk '{print $1;}')
+        RTRIM=$(grep 'qiime dada2 denoise-paired --trim-len-r <integer>' $CONFIG | awk '{print $1;}')
+        CHIMERA=$(grep 'qiime dada2 denoise-paired --p-min-fold-parent-over-abundance <integer>' $CONFIG | awk '{print $1;}')
+        ALPHARMIN=$(grep 'minimum sampling depth for alpha rarefaction' $CONFIG | awk '{print $1;}')
+        ALPHARMAX=$(grep 'qiime diversity alpha-rarefaction --p-max-depth <integer>' $CONFIG | awk '{print $1;}')
+        ALPHARSTEPS=$(grep 'qiime diversity alpha-rarefaction --p-steps <integer>' $CONFIG | awk '{print $1;}')
+        FILTCOV=$(grep 'qiime feature-table filter-samples --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
+        FILTTAX=$(grep 'FILTTAX filename variable <string> ' $CONFIG | awk '{print $1;}')
+        FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
+        TFILT1=$(grep 'taxonomy filtration argument 1 <exclude/include> <"string">' $CONFIG | awk '{print $1, $2;}')
+        TMODE1=$(grep 'taxonomy filtration argument 1 <exact/contains> <"string">' $CONFIG | awk '{print $1, $2;}')
+        TFILT2=$(grep 'taxonomy filtration argument 2 <exclude/include> <"string">' $CONFIG | awk '{print $1, $2;}')
+        TMODE2=$(grep 'taxonomy filtration argument 2 <exact/contains> <"string">' $CONFIG | awk '{print $1, $2;}')
+        TFILT3=$(grep 'taxonomy filtration argument 3 <exclude/include> <"string">' $CONFIG | awk '{print $1, $2;}')
+        TMODE3=$(grep 'taxonomy filtration argument 3 <exact/contains> <"string">' $CONFIG | awk '{print $1, $2;}')
+        MFILT=$(grep 'metadata filtration argument 1  <mySQL where statement>' $CONFIG | gawk '{if (match($0,/where.*"/,m)) print m[0]}')
+        DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
+        DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
+        BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string> ' $CONFIG | awk '{print $1;}')
+        PERMFORM=$(grep 'qiime diversity adonis --p-formula <string>  ' $CONFIG | awk '{print $1;}')
+        COLV=$(grep 'qiime taxa collapse --p-level <integer>' $CONFIG | awk '{print $1;}')
 fi
-echo $CONFIG
-echo $FTRUNC
-echo $FILTCOV
-echo $FUNKTION
 
+echo "Done reading config file.  Proceeding to module $1"
 
+if [[ $FUNKTION == 1 ]];
+	then
+		mkdir -p metadata
+		mkdir -p fastq
+		echo "place tab-delimited .txt metadata file in metadata folder"
+		echo "place all .fastq files (.gz is OK) in fastq folder.  Ensure that only .fastq files are present in the folder"
 
-if [[ $FTRUNC -eq 275 ]];then
-echo "Running 1_setup_qiime2"
-echo "Folder setup for QIIME2 processing on Wahab HPC cluster"
-mkdir metadata
-mkdir -p fastq
-
-##Subsequent to running this file:
-
-echo "place tab-delimited .txt metadata file in metadata folder"
-echo "place all .fastq files (.gz is OK) in fastq folder.  Ensure that only .fastq files are present in the folder"
-
-elif [ $FUNKTION = "FOO" ]; then
-echo "running"
-##SCRIPT1a: 1a_feature_classifier_qiime2
+elif [[ $FUNKTION == 2 ]];
+	then
+		echo "Running 2_feature_classifier_qiime2"
+		echo "Silva version is $SILVAVERSION"
+		echo "Silva target is $SILVATARGET"
+		echo "Forward sequencing primer: $FPRIMER"
+		echo "Reverse sequencing primer: $RPRIMER"
+		echo "Min expected amplicon length: $MINAMP"
+		echo "Max expected amplicon length: $MAXAMP"
 
 #This script will train the feature classifier for use in taxonomy analysis.  
 #see: https://docs.qiime2.org/2021.4/tutorials/feature-classifier/ for details
-
-echo "end"
-
+ 
 mkdir training_feature_classifiers
 
 crun qiime rescript get-silva-data \
@@ -104,28 +87,28 @@ crun qiime rescript get-silva-data \
 --p-target 'SSURef_NR99' \
 --p-include-species-labels \
 --p-download-sequences \
---o-silva-sequences silva-138.1-ssu-nr99-seqs.qza \
---o-silva-taxonomy silva-138.1-ssu-nr99-tax.qza
+--o-silva-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs.qza \
+--o-silva-taxonomy training_feature_classifiers/silva-138.1-ssu-nr99-tax.qza
 
 crun qiime rescript cull-seqs \
---i-sequences silva-138.1-ssu-nr99-seqs.qza \
---o-clean-sequences silva-138.1-ssu-nr99-seqs_cleaned.qza
+--i-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs.qza \
+--o-clean-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned.qza
 
 crun qiime rescript filter-seqs-length-by-taxon \
---i-sequences silva-138.1-ssu-nr99-seqs_cleaned.qza \
---i-taxonomy silva-138.1-ssu-nr99-tax.qza \
+--i-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned.qza \
+--i-taxonomy training_feature_classifiers/silva-138.1-ssu-nr99-tax.qza \
 --p-labels Archaea Bacteria Eukaryota \
 --p-min-lens 900 1200 1400 \
---o-filtered-seqs silva-138.1-ssu-nr99-seqs_cleaned_filt.qza \
---o-discarded-seqs silva-138-ssu-nr99-seqs_discard.qza
+--o-filtered-seqs training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned_filt.qza \
+--o-discarded-seqs training_feature_classifiers/silva-138-ssu-nr99-seqs_discard.qza
 
 crun qiime rescript dereplicate \
---i-sequences silva-138.1-ssu-nr99-seqs_cleaned_filt.qza \
---i-taxa silva-138.1-ssu-nr99-tax.qza \
+--i-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned_filt.qza \
+--i-taxa training_feature_classifiers/silva-138.1-ssu-nr99-tax.qza \
 --p-rank-handles 'silva' \
 --p-mode 'uniq' \
---o-dereplicated-sequences silva-138.1-ssu-nr99-seqs_cleaned_filt_derep.qza \
---o-dereplicated-taxa silva-138.1-ssu-nr99-tax_derep.qza
+--o-dereplicated-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned_filt_derep.qza \
+--o-dereplicated-taxa training_feature_classifiers/silva-138.1-ssu-nr99-tax_derep.qza
 
 #Seems not to be necessary if previous steps run.  If no cleaning was done, this is necessary.
 
@@ -134,20 +117,24 @@ crun qiime rescript dereplicate \
 #--o-dna-sequences silva-138.1-ssu-nr99-seqs_cleaned_filt_derep_dna.qza
 
 crun qiime feature-classifier extract-reads \
---i-sequences silva-138.1-ssu-nr99-seqs_cleaned_filt_derep.qza \
+--i-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned_filt_derep.qza \
 --p-f-primer CCTACGGGNGGCWGCAG \
 --p-r-primer GACTACHVGGGTATCTAATCC \
 --p-min-length 350 \
 --p-max-length 550 \
---o-reads ref-seqs_silva138_NR99.qza
+--o-reads training_feature_classifiers/ref-seqs_silva138_NR99.qza
 
 crun qiime feature-classifier fit-classifier-naive-bayes \
---i-reference-reads ref-seqs_silva138_NR99.qza \
---i-reference-taxonomy silva-138.1-ssu-nr99-tax_derep.qza \
---o-classifier slv_ssu_138.1_classifier.qza
+--i-reference-reads training_feature_classifiers/ref-seqs_silva138_NR99.qza \
+--i-reference-taxonomy training_feature_classifiers/silva-138.1-ssu-nr99-tax_derep.qza \
+--o-classifier training_feature_classifiers/slv_ssu_138.1_classifier.qza
 
+	echo "Module 2 completed successfully"
 
-elif [ "$FUNKTION" == "2_file_import_qiime2" ]; then
+elif [[ $FUNKTION == 3 ]];
+        then
+                echo "Running 3_file_import_qiime2" 
+		echo "Finding .fastq files at $FASTQ"
 
 #Preprocessing script for paired-end Illumina reads using dada2
 #saves demux and joined files to folder called demux in top analysis directory.
@@ -183,7 +170,17 @@ crun qiime demux summarize \
 
 ##Output from demux-joined.qzv should be examined to determine and set parameters for next step if not using dada2
 
-elif [ "$FUNKTION" == "3_preprocessing_qiime2" ]; then
+	echo "Module 3 completed successfully"
+
+elif [[ $FUNKTION == 4 ]];
+        then
+                echo "Running 4_DADA2_preprocessing_qiime2" 
+		echo "Forward truncation at $FTRUNC bp"
+		echo "Reverse truncation at $RTRUNC bp"
+		echo "Forward trimming $FTRIM bp"
+		echo "Reverse trimming $RTRIM bp"
+		echo "Chimera fold overabundance: $CHIMERA"
+		echo -e "\nAlpha rarefaction performed from $ALPHARMIN to $ALPHARMAX X coverage in $ALPHARSTEPS X steps"
 
 #Preprocessing script for paired-end Illumina reads using dada2
 #requires demux paired end files in folder called demux under top analysis directory
@@ -223,7 +220,7 @@ crun qiime phylogeny align-to-tree-mafft-fasttree \
 ##Taxonomic analysis (generate taxonomy.qza file)
 
 crun qiime feature-classifier classify-sklearn \
-  --i-classifier /cm/shared/courses/gauthier/Microbiome/training_feature_classifiers/slv_ssu_138.1_classifier.qza \
+  --i-classifier ../training_feature_classifiers/slv_ssu_138.1_classifier.qza \
   --i-reads rep-seqs.qza \
   --o-classification taxonomy.qza
 
@@ -237,13 +234,20 @@ crun qiime metadata tabulate \
 crun qiime diversity alpha-rarefaction \
   --i-table table.qza \
   --i-phylogeny rooted-tree.qza \
-  --p-steps 50 \
-  --p-min-depth 1000 \
-  --p-max-depth 50000 \
+  --p-steps $ALPHARSTEPS \
+  --p-min-depth $ALPHARMIN \
+  --p-max-depth $ALPHARMAX \
   --m-metadata-file $METAPATH \
   --o-visualization alpha-rarefaction.qzv
 
-elif [ "$FUNKTION" == "4_filter_coremetrics_qiime2" ]; then
+
+elif [[ $FUNKTION == 5 ]];
+        then
+                echo "Running 5_filtering_and_coremetrics_qiime2" 
+		echo "Minimum coverage set at $FILTCOV"
+		echo "Taxonomic filtration is $FILTTAX"
+		echo "Metadata filtration is $FILTMETA"
+
 
 if [ -z $FILTTAX ]
         then
@@ -357,135 +361,19 @@ crun qiime taxa barplot \
 --m-metadata-file $METAPATH \
 --o-visualization barplot${FILTTAX}${FILTCOV}${FILTMETA}.qzv
 
-elif [ "$FUNKTION" == "5_univariate_stats_qiime2" ]; then
+	echo "Module 5 completed successfully"
 
-#This script is designed to perform post-filtration analyses
-#Sections are intended to be run sequentially, and should be commented out as needed
-echo "5 running"
-fi
-if [ -z $FILTCOV ]
-then
-echo "coverage filter not specified"
-else
-FILTCOV=_$FILTCOV
-fi
+elif [[ $FUNKTION == 6 ]];
+        then
+                echo "Running 6_univariate_stats_qiime2" 
 
-if [ -z $FILTMETA ]
-then
-echo "metadata filter not specified"
-else
-FILTMETA=_$FILTMETA
+elif [[ $FUNKTION == 7 ]];
+        then
+                echo "Running 7_multivariate_stats_qiime2" 
+
+elif [[ $FUNKTION == 8 ]];
+        then
+                echo "Running 8_ANCOM_feature_classifier_qiime2" 
+
 fi
 
-if [ -z $FILTTAX ]
-then
-echo "taxonomy filter not specified"
-else
-FILTTAX=_$FILTTAX
-fi
-
-COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
-
-##RUNSCRIPTS, don't change
-
-crun qiime diversity alpha-group-significance \
-  --i-alpha-diversity ${COREMETRICS}/${DMALPHA}_vector${FILTTAX}${FILTCOV}${FILTMETA}.qza \
-  --m-metadata-file $METAPATH \
-  --o-visualization ${COREMETRICS}/${DMALPHA}-group-significance${FILTTAX}${FILTCOV}${FILTMETA}.qzv
-
-##Beta group significance comparisons
-#Performs both permdisp routine for dispersion analysis and permanova for centroids
-
-crun qiime diversity beta-group-significance \
-  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTMETA}.qza \
-  --m-metadata-file $METAPATH \
-  --m-metadata-column ${BETACOMPVAR} \
-  --p-method 'permdisp' \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permdisp_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
-  --p-pairwise
-
-crun qiime diversity beta-group-significance \
-  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTMETA}.qza \
-  --m-metadata-file $METAPATH \
-  --m-metadata-column ${BETACOMPVAR} \
-  --p-method 'permanova' \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permanova_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
-  --p-pairwise
-
-elif [ "$FUNKTION" == "6_multivariate_stats_qiime2" ]; then
-
-crun qiime diversity adonis \
-  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTMETA}.qza \
-  --m-metadata-file $METAPATH \
-  --p-formula ${PERMFORM} \
-  --p-permutations 999 \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}_${FILTTAX}${FILTCOV}${FILTMETA}.qzv 
-
-elif [ "$FUNKTION" == "7_ANCOM_qiime2" ]; then
-
-##AUTOSET, Don't change
-if [ -z $FILTCOV ]
-then
-echo "coverage filter not specified"
-else
-FILTCOV=_$FILTCOV
-fi
-
-if [ -z $FILTMETA ]
-then
-echo "metadata filter not specified"
-else
-FILTMETA=_$FILTMETA
-fi
-
-if [ -z $FILTTAX ]
-then
-echo "taxonomy filter not specified"
-else
-FILTTAX=_$FILTTAX
-fi
-
-COREMETRICS=core-metrics-results${FILTCOV}${FILTMETA}${FILTTAX}
-
-##RUNSCRIPTS, don't change
-
-crun qiime taxa collapse \
-  --i-table table${FILTCOV}${FILTMETA}${FILTTAX}.qza \
-  --i-taxonomy taxonomy.qza \
-  --p-level ${COLV} \
-  --o-collapsed-table collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qza
-
-##ANCOM analysis
-
-crun qiime composition add-pseudocount \
---i-table table${FILTCOV}${FILTMETA}${FILTTAX}.qza \
---o-composition-table comp-table${FILTCOV}${FILTMETA}${FILTTAX}.qza
-
-crun qiime composition ancom \
---i-table comp-table${FILTCOV}${FILTMETA}${FILTTAX}.qza \
---m-metadata-file $METAPATH \
---m-metadata-column $BETACOMPVAR \
---o-visualization ancom-$BETACOMPVAR-${FILTCOV}${FILTMETA}${FILTTAX}.qzv
-
-#ANCOM analysis at specific taxonomic level
-
-crun qiime taxa collapse \
---i-table table${FILTCOV}${FILTMETA}${FILTTAX}.qza \
---i-taxonomy taxonomy.qza \
---p-level ${COLV} \
---o-collapsed-table collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qza 
-
-crun qiime composition add-pseudocount \
---i-table collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qza \
---o-composition-table comp-collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qza 
-
-crun qiime composition ancom \
---i-table comp-collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qza \
---m-metadata-file $METAPATH \
---m-metadata-column $BETACOMPVAR \
---o-visualization comp-collapseLevel${COLV}-table${FILTCOV}${FILTMETA}${FILTTAX}.qzv
-
-else
-
-echo "nothing to do"
-fi

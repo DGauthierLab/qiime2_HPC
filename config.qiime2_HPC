@@ -2,13 +2,23 @@ CONFIG FILE FOR QIIME2_HPC
 
 ----------Filepaths---------------------------------------------------------------
 
-.fastq files: /cm/shared/courses/gauthier/Microbiome/
+.fastq files: /cm/shared/courses/gauthier/Microbiome/DG_19_21/fastq
 
-metadata files: /cm/shared/courses/gauthier/Microbiome/
+metadata files: /cm/shared/courses/gauthier/Microbiome/newtest/metadata/metadata_19_21b.txt
 
 __________________________________________________________________________________
 
-----------Script 3: preprocessing-------------------------------------------------------------------------------------------------------------------------
+----------Script 2: feature classifier-------------------------------------------------------------------------------------------------------------------------
+138.1		qiime rescript get-silva-data --p-version <integer>				Database version (silva)
+SSURef_NR99	qiime rescript get-silva-data --p-target <string>				Database target (silva)
+CCTACGGGNGGCWGCAG		qiime feature-classifier extract-reads --p-f-primer		Forward amplicon primer sequence
+GACTACHVGGGTATCTAATCC		qiime feature-classifier extract-reads --p-r-primer  		Reverse amplicon primer sequence
+350				qiime feature-classifier extract-reads --p-min-length		minimum expected amplicon size	
+550				qiime feature-classifier extract-reads --p-max-length		maximum expected amplicon size
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+----------Script 4: preprocessing-------------------------------------------------------------------------------------------------------------------------
 275		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
 275             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
 17		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
@@ -19,7 +29,7 @@ ________________________________________________________________________________
 50000		qiime diversity alpha-rarefaction --p-max-depth <integer>			maximum sampling depth for alpha rarefaction
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-----------Script 4: filter and run core metrics-----------------------------------------------------------------------------------------------------------
+----------Script 5: filter and run core metrics-----------------------------------------------------------------------------------------------------------
 10000           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
 allassigned		FILTTAX filename variable <string>						Descriptive string for taxonomy filtration
 nocontrol_wild_noSI	FILTMETA filename variable <string>						Descriptive string for metadata filtration
@@ -37,13 +47,9 @@ where "[Biome] LIKE 'wild caught%' AND NOT [Location] = 'SI'"	metadata filtratio
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-----------Script 5: filter and run core metrics-----------------------------------------------------------------------------------------------------------
+----------Script 6: univariate stats-----------------------------------------------------------------------------------------------------------
 shannon			alpha diversity metric <string>
 bray_curtis		beta diversity metric <string>
-----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-----------Script 6: alpha and univariate beta diversity stats---------------------------------------------------------------------------------------------
 Rp_status		comparison variable for univariate beta diversity comparison <string>		Must match metadata heading
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -54,3 +60,4 @@ Location*Rp_status	qiime diversity adonis --p-formula <string>					Use var1+var2
 ----------Script 8: ANCOM---------------------------------------------------------------------------------------------------------------------------------      
 5			qiime taxa collapse --p-level <integer>			1-Kingdom, 2-Phylum, 3-Class, 4-Order, 5-Family, 6-Genus, 7-Species (no collapse)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
