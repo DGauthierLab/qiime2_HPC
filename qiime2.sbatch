@@ -28,8 +28,7 @@ module load container_env qiime2/2022.08
 
 
 #Qiime2 module to run
-MODULE=4
-
+MODULE=2
 
 bash qiime2_HPC/qiime2.bash $MODULE qiime2_HPC/config.qiime2_HPC
 

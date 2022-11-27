@@ -17,6 +17,10 @@ GACTACHVGGGTATCTAATCC		qiime feature-classifier extract-reads --p-r-primer  		Re
 550				qiime feature-classifier extract-reads --p-max-length		maximum expected amplicon size
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+----------Script 2: feature classifier------------------------------------------------------------------------------------------------
+paired		qiime tools import --type <paired/single>					paired or single end reads
+
+--------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 4: preprocessing-------------------------------------------------------------------------------------------------------------------------
 275		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences

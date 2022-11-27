@@ -144,12 +144,11 @@ mkdir -p demux
 
 	if [[ $READTYPE == "paired" ]];
 		then
-			SETREADS='SampleData[PairedEndSequencesWithQuality]'
+			SETREADS = 'SampleData[PairedEndSequencesWithQuality]'
 	elif [[ $READTYPE == "single" ]];
 		then
-			SETREADS='SampleData[SequencesWithQuality]'
+			SETREADS = 'SampleData[SequencesWithQuality]'
 	fi
-	echo "Performing file import for $READTYPE reads"
 
 #For demultiplexed MiSeq data, only change --input-path below
 
@@ -250,8 +249,148 @@ crun qiime diversity alpha-rarefaction \
   --p-max-depth $ALPHARMAX \
   --m-metadata-file $METAPATH \
   --o-visualization alpha-rarefaction.qzv
+
 ;;
 
+	5)
+
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+
+                echo "Running 5_filtering_and_coremetrics_qiime2" 
+		echo "Minimum coverage set at $FILTCOV"
+		echo "Taxonomic filtration is $FILTTAX"
+		echo "		Taxonomy argument 1 is: $TMODE1 $TFILT1"
+		echo "          Taxonomy argument 2 is: $TMODE2 $TFILT2"
+		echo "          Taxonomy argument 3 is: $TMODE1 $TFILT3"
+		echo "Metadata filtration is $FILTMETA"
+		echo "		Metadata argument is: $MFILT"
+
+if [ -z $FILTTAX ];
+        then
+                echo "taxonomic filter not specified"
+        else
+                FILTTAX=_$FILTTAX
+
+                if [ -z $TFILT1 ];
+                        then
+                                echo "taxonomic filter 1 not specified"
+                        elif	[ -z $TMODE1 ];
+                                        then
+                                                echo "taxonomic mode 1 not specified"
+
+                                        else
+                                                crun qiime taxa filter-table \
+                                                --i-table table.qza \
+                                                --i-taxonomy taxonomy.qza \
+                                                --p-${TMODE1} \
+                                                --p-${TFILT1} \
+                                                --o-filtered-table table${FILTTAX}.qza 
+		fi
+
+                if [ -z $TFILT2 ];
+
+                        then
+                                echo "taxonomic filter 2 not specified"
+                        elif	[ -z $TMODE2 ];
+                                        then
+                                                echo "taxonomic mode 2 not specified"
+
+                                        else
+
+                                                crun qiime taxa filter-table \
+                                                --i-table table.qza \
+                                                --i-taxonomy taxonomy.qza \
+                                                --p-${TMODE2} \
+                                                --p-${TFILT2} \
+                                                --o-filtered-table table${FILTTAX}.qza
+			fi
+
+                if [ -z $TFILT3 ];
+
+                        then
+                                echo "taxonomic filter 3 not specified"
+
+                        elif	[ -z $TMODE3 ];
+                                        then
+                                                echo "taxonomic mode 3 not specified"
+
+                                        else
+                                                crun qiime taxa filter-table \
+                                                --i-table table${FILTTAX}.qza \
+                                                --i-taxonomy taxonomy.qza \
+                                                --p-${TMODE3} \
+                                                --p-${TMODE3} \
+                                                --o-filtered-table table${FILTTAX}.qza 
+		fi
+fi
+
+if [ -z $FILTCOV ];
+        then
+                echo "coverage filter not specified"
+        else
+                COV=$FILTCOV
+                FILTCOV=_$FILTCOV
+                        crun qiime feature-table filter-samples \
+                          --i-table table${FILTTAX}.qza \
+                          --p-min-frequency $COV \
+                          --o-filtered-table table${FILTTAX}${FILTCOV}.qza
+fi
+
+if [ -z $FILTMETA ];
+        then
+                echo "metadata filter not specified"
+        else
+                FILTMETA=_$FILTMETA
+                crun qiime feature-table filter-samples \
+                  --i-table table${FILTTAX}${FILTCOV}.qza \
+                  --m-metadata-file $METAPATH \
+                  --p-${MFILT} \
+                  --o-filtered-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza
+fi
+
+##Summarize the new filtered table
+crun qiime feature-table summarize \
+  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --o-visualization table${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
+  --m-sample-metadata-file $METAPATH
+
+##Alpha and Beta diversity metrics
+crun qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny rooted-tree.qza \
+  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --p-sampling-depth $COV \
+  --m-metadata-file $METAPATH \
+  --output-dir core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
+
+##change filenames to reflect filtering parameters
+cd core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA} &&
+for f in * ;
+do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTMETA}.qz\2/g") ;
+done
+cd ..
+
+##Following assumes taxonomic classification has already been run
+crun qiime taxa barplot \
+--i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--i-taxonomy taxonomy.qza \
+--m-metadata-file $METAPATH \
+--o-visualization barplot${FILTTAX}${FILTCOV}${FILTMETA}.qzv
+
+	echo "Module 5 completed successfully"
+;;
+
+	6)
+                echo "Running 6_univariate_stats_qiime2" 
+;;
+
+	7)
+                echo "Running 7_multivariate_stats_qiime2" 
+;;
+
+	8)
+                echo "Running 8_ANCOM_feature_classifier_qiime2" 
+
+;;
 *)
 	echo "Nothing to do"
 ;;
