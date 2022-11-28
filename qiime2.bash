@@ -203,6 +203,15 @@ cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 ##follows from 1_file_import_qiime2 script
 #examine demux-paired-end.qzv file to estimate settings
 #note min-fold-parent-over-abundance setting here (reduces # of detected chimeras)
+
+
+if [[ -f "rep-seqs.qza" ]] && [[ -f "table.qza" ]] && [[ -f "stats.qza" ]]
+
+then
+    echo "files rep-seqs.qza, table.qza, and stats.qza exist.  skipping..."
+
+else
+
 crun qiime dada2 denoise-paired \
   --i-demultiplexed-seqs ../demux/demux-${READTYPE}-end.qza \
   --p-trunc-len-f ${FTRUNC} \
@@ -215,12 +224,28 @@ crun qiime dada2 denoise-paired \
   --p-min-fold-parent-over-abundance ${CHIMERA} \
   --p-n-threads 0
 
-#Shouldn't need changed
+fi
+
+if [[ -f "stats.qzv" ]]
+
+then 
+	echo "stats.qzv exists.  skipping."
+
+else
+
 crun qiime metadata tabulate \
   --m-input-file stats.qza \
   --o-visualization stats.qzv
 
-#Shouldn't need changed
+fi
+
+if [[ -f "rooted-tree.qza" ]] && [[ -f "masked-aligned-rep-seqs.qza" ]] && [[ "unrooted-tree.qza" ]] && [[ "aligned rep-seqs.qza" ]]
+
+then
+	echo "aligned-rep-seqs.qza, masked aligned-rep-seqs.qza, unrooted-tree.qza, and rooted-tree.qza exist.  skipping..."
+
+else
+
 crun qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences rep-seqs.qza \
   --o-alignment aligned-rep-seqs.qza \
@@ -228,7 +253,16 @@ crun qiime phylogeny align-to-tree-mafft-fasttree \
   --o-tree unrooted-tree.qza \
   --o-rooted-tree rooted-tree.qza
 
+fi
+
 ##Taxonomic analysis (generate taxonomy.qza file)
+
+if [[ -f "taxonomy.qza" ]] && [[ -f "taxonomy.qzv" ]]
+
+then
+	echo "taxonomy.qza and .qzv files exist.  skipping"
+
+else
 
 crun qiime feature-classifier classify-sklearn \
   --i-classifier ../training_feature_classifiers/slv_ssu_138.1_classifier.qza \
@@ -239,8 +273,17 @@ crun qiime metadata tabulate \
   --m-input-file taxonomy.qza \
   --o-visualization taxonomy.qzv
 
+fi
+
 ##Run alpha-rarefaction analysis on whole data
 ##Alpha Rarefaction
+
+if [[ -f "alpha-rarefaction.qzv" ]]
+
+then
+	echo "alpha-rarefaction.qzv exists.  skipping"
+
+else
 
 crun qiime diversity alpha-rarefaction \
   --i-table table.qza \
@@ -250,6 +293,7 @@ crun qiime diversity alpha-rarefaction \
   --p-max-depth $ALPHARMAX \
   --m-metadata-file $METAPATH \
   --o-visualization alpha-rarefaction.qzv
+fi
 ;;
 
 *)
