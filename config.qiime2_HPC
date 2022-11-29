@@ -35,19 +35,21 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 
 ----------Script 5: filter and run core metrics-----------------------------------------------------------------------------------------------------------
 10000           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
-allassigned		FILTTAX filename variable <string>						Descriptive string for taxonomy filtration
-nocontrol_wild_noSI	FILTMETA filename variable <string>						Descriptive string for metadata filtration
+allassigned_norick		FILTTAX filename variable <string>						Descriptive string for taxonomy filtration
+nocontrol_wild		FILTMETA filename variable <string>						Descriptive string for metadata filtration
 
-exclude "unassigned"	taxonomy filtration argument 1 <exclude/include> <"string">
-mode "exact"		taxonomy filtration argument 1 <exact/contains> <"string">
+*****Enter <none> for taxonomy filtration functions if not using*****
 
-exclude "d__Bacteria"	taxonomy filtration argument 2 <exclude/include> <"string">
-mode "exact"		taxonomy filtration argument 2 <exact/contains> <"string">
+exclude chloroplast,Rickettsia,unassigned		taxonomy filtration match argument 1 <exclude/include> <string>
+contains						taxonomy filtration mode argument 1 <exact/contains>
 
-exclude "chloroplast"	taxonomy filtration argument 3 <exclude/include> <"string">
-mode "contains"		taxonomy filtration argument 3 <exact/contains> <"string">
+exclude d__Bacteria					taxonomy filtration match argument 2 <exclude/include> <string>
+exact							taxonomy filtration mode argument 2 <exact/contains>
 
-where "[Biome] LIKE 'wild caught%' AND NOT [Location] = 'SI'"	metadata filtration argument 1  <mySQL where statement>
+none none						taxonomy filtration match argument 3 <exclude/include> <string>
+none							taxonomy filtration mode argument 3 <exact/contains>
+
+"[Biome] LIKE 'wild caught%' OR [Biome] LIKE 'control'"		metadata filtration argument 1  <double quoted mySQL where statement>
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -64,4 +66,5 @@ Location*Rp_status	qiime diversity adonis --p-formula <string>					Use var1+var2
 ----------Script 8: ANCOM---------------------------------------------------------------------------------------------------------------------------------      
 5			qiime taxa collapse --p-level <integer>			1-Kingdom, 2-Phylum, 3-Class, 4-Order, 5-Family, 6-Genus, 7-Species (no collapse)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 

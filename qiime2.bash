@@ -43,19 +43,22 @@ if [ -n $2 ]; then
         ALPHARMAX=$(grep 'qiime diversity alpha-rarefaction --p-max-depth <integer>' $CONFIG | awk '{print $1;}')
         ALPHARSTEPS=$(grep 'qiime diversity alpha-rarefaction --p-steps <integer>' $CONFIG | awk '{print $1;}')
         FILTCOV=$(grep 'qiime feature-table filter-samples --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
-        FILTTAX=$(grep 'FILTTAX filename variable <string> ' $CONFIG | awk '{print $1;}')
+        FILTTAX=$(grep 'FILTTAX filename variable <string>' $CONFIG | awk '{print $1;}')
         FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
-        TFILT1=$(grep 'taxonomy filtration argument 1 <exclude/include> <"string">' $CONFIG | awk '{print $1, $2;}')
-        TMODE1=$(grep 'taxonomy filtration argument 1 <exact/contains> <"string">' $CONFIG | awk '{print $1, $2;}')
-        TFILT2=$(grep 'taxonomy filtration argument 2 <exclude/include> <"string">' $CONFIG | awk '{print $1, $2;}')
-        TMODE2=$(grep 'taxonomy filtration argument 2 <exact/contains> <"string">' $CONFIG | awk '{print $1, $2;}')
-        TFILT3=$(grep 'taxonomy filtration argument 3 <exclude/include> <"string">' $CONFIG | awk '{print $1, $2;}')
-        TMODE3=$(grep 'taxonomy filtration argument 3 <exact/contains> <"string">' $CONFIG | awk '{print $1, $2;}')
-        MFILT=$(grep 'metadata filtration argument 1  <mySQL where statement>' $CONFIG | gawk '{if (match($0,/where.*"/,m)) print m[0]}')
+        TFILT1=$(grep 'taxonomy filtration match argument 1 <exclude/include> <string>' $CONFIG | awk '{print $1;}')
+	TFILT1A=$(grep 'taxonomy filtration match argument 1 <exclude/include> <string>' $CONFIG | awk '{print $2;}')
+        TMODE1=$(grep 'taxonomy filtration mode argument 1 <exact/contains>' $CONFIG | awk '{print $1;}')
+        TFILT2=$(grep 'taxonomy filtration match argument 2 <exclude/include> <string>' $CONFIG | awk '{print $1;}')
+        TFILT2A=$(grep 'taxonomy filtration match argument 2 <exclude/include> <string>' $CONFIG | awk '{print $2;}')
+	TMODE2=$(grep 'taxonomy filtration mode argument 2 <exact/contains>' $CONFIG | awk '{print $1;}')
+        TFILT3=$(grep 'taxonomy filtration match argument 3 <exclude/include> <string>' $CONFIG | awk '{print $1;}')
+        TFILT3A=$(grep 'taxonomy filtration match argument 3 <exclude/include> <string>' $CONFIG | awk '{print $2;}')
+	TMODE3=$(grep 'taxonomy filtration mode argument 3 <exact/contains>' $CONFIG | awk '{print $1;}')
+        MFILT=$(grep 'metadata filtration argument 1  <double quoted mySQL where statement>' $CONFIG | grep -oP '\"\K.*(?=\")')
         DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
         DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
-        BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string> ' $CONFIG | awk '{print $1;}')
-        PERMFORM=$(grep 'qiime diversity adonis --p-formula <string>  ' $CONFIG | awk '{print $1;}')
+        BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string>' $CONFIG | awk '{print $1;}')
+        PERMFORM=$(grep 'qiime diversity adonis --p-formula <string>' $CONFIG | awk '{print $1;}')
         COLV=$(grep 'qiime taxa collapse --p-level <integer>' $CONFIG | awk '{print $1;}')
 fi
 
@@ -66,11 +69,12 @@ case $FUNKTION in
 	1)
 		mkdir -p metadata
 		mkdir -p fastq
+		echo "module 1 running.  file setup"
 		echo "place tab-delimited .txt metadata file in metadata folder"
 		echo "place all .fastq files (.gz is OK) in fastq folder.  Ensure that only .fastq files are present in the folder"
 ;;
 	2)
-		echo "Running 2_feature_classifier_qiime2"
+		echo "module 2 running.  taxonomy classifier training"
 		echo "Silva version is $SILVAVERSION"
 		echo "Silva target is $SILVATARGET"
 		echo "Forward sequencing primer: $FPRIMER"
@@ -134,7 +138,7 @@ crun qiime feature-classifier fit-classifier-naive-bayes \
 ;;
 
 	3)
-                echo "Running 3_file_import_qiime2"
+                echo "module 3 running.  importing files"
 		echo "Finding .fastq files at $FASTQ"
 
 #Preprocessing script for paired-end Illumina reads using dada2
@@ -296,8 +300,242 @@ crun qiime diversity alpha-rarefaction \
 fi
 ;;
 
+
+5)
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+
+                echo "Running 5_filtering_and_coremetrics_qiime2" 
+                echo ""
+		echo "Minimum coverage set at: $FILTCOV"
+                echo ""
+		echo "Taxonomic filtration is: $FILTTAX"
+                echo "          Taxonomy argument 1 is: --p-mode ${TMODE1} --p-${TFILT1} "${TFILT1A}""
+                echo "          Taxonomy argument 2 is: --p-mode ${TMODE2} --p-${TFILT2} "${TFILT2A}""
+                echo "          Taxonomy argument 3 is: --p-mode ${TMODE3} --p-${TFILT3} "${TFILT3A}""
+                echo ""
+		echo "Metadata filtration is: $FILTMETA"
+                echo "          Metadata argument is: --p-where "$MFILT""
+		echo ""
+if [[ -z $FILTTAX ]]
+        then
+                echo "taxonomic filter not specified"
+        else
+                FILTTAX=_$FILTTAX
+
+                if [[ $TFILT1 == "none" ]] || [[ $TFILT1A == "none" ]]
+                        then
+                                echo "taxonomic filter 1 not specified"
+
+			elif    [[ -z $TMODE1 ]]
+                                        then
+                                                echo "taxonomic mode 1 not specified"
+
+                                        else
+                                                crun qiime taxa filter-table \
+                                                --i-table table.qza \
+                                                --i-taxonomy taxonomy.qza \
+                                                --p-mode $TMODE1 \
+                                                --p-${TFILT1} "$TFILT1A" \
+                                                --o-filtered-table table${FILTTAX}.qza
+                fi
+
+		if [[ $TFILT2 == "none" ]] || [[ $TFILT2A == "none" ]]
+                        then
+                                echo "taxonomic filter 2 not specified"
+
+			elif    [[ -z $TMODE2 ]]
+                                        then
+                                                echo "taxonomic mode 2 not specified"
+
+                                        else
+
+                                                crun qiime taxa filter-table \
+                                                --i-table table.qza \
+                                                --i-taxonomy taxonomy.qza \
+                                                --p-mode ${TMODE2} \
+                                                --p-${TFILT2} "$TFILT2A" \
+                                                --o-filtered-table table${FILTTAX}.qza
+                        fi
+
+                if [[ $TFILT3 == "none" ]] || [[ $TFILT3A == "none" ]]
+
+                        then
+                                echo "taxonomic filter 3 not specified"
+
+                        elif   [[ -z $TMODE3 ]]
+                                        then
+                                                echo "taxonomic mode 3 not specified"
+
+                                        else
+                                                crun qiime taxa filter-table \
+                                                --i-table table${FILTTAX}.qza \
+                                                --i-taxonomy taxonomy.qza \
+                                                --p-mode ${TMODE3} \
+                                                --p-${TFILT3} "$TFILT3A" \
+                                                --o-filtered-table table${FILTTAX}.qza 
+                fi
+fi
+
+if [[ -z $FILTCOV ]]
+        then
+                echo "coverage filter not specified"
+        else
+                COV=$FILTCOV
+                FILTCOV=_$FILTCOV
+                        crun qiime feature-table filter-samples \
+                          --i-table table${FILTTAX}.qza \
+                          --p-min-frequency $COV \
+                          --o-filtered-table table${FILTTAX}${FILTCOV}.qza
+fi
+
+if [[ -z $FILTMETA ]]
+        then
+                echo "metadata filter not specified"
+
+        else
+                FILTMETA=_$FILTMETA
+		crun qiime feature-table filter-samples \
+                  --i-table table${FILTTAX}${FILTCOV}.qza \
+                  --m-metadata-file $METAPATH \
+                  --p-where "$MFILT" \
+                  --o-filtered-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza
+fi
+
+##Summarize the new filtered table
+crun qiime feature-table summarize \
+  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --o-visualization table${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
+  --m-sample-metadata-file $METAPATH
+
+##Alpha and Beta diversity metrics
+crun qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny rooted-tree.qza \
+  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --p-sampling-depth $COV \
+  --m-metadata-file $METAPATH \
+  --output-dir core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
+
+##change filenames to reflect filtering parameters
+cd core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA} &&
+for f in * ;
+do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTMETA}.qz\2/g") ;
+done
+cd ..
+
+##Following assumes taxonomic classification has already been run
+crun qiime taxa barplot \
+--i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--i-taxonomy taxonomy.qza \
+--m-metadata-file $METAPATH \
+--o-visualization barplot${FILTTAX}${FILTCOV}${FILTMETA}.qzv
+
+        echo "Module 5 completed successfully"
+;;
+
+6)
+echo "6 running"
+
+if [ -z $FILTCOV ]
+then
+echo "coverage filter not specified"
+else
+FILTCOV=_$FILTCOV
+fi
+
+if [ -z $FILTMETA ]
+then
+echo "metadata filter not specified"
+else
+FILTMETA=_$FILTMETA
+fi
+
+if [ -z $FILTTAX ]
+then
+echo "taxonomy filter not specified"
+else
+FILTTAX=_$FILTTAX
+fi
+
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
+
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+echo "Metadata path is: $METAPATH"
+echo "alpha diversity metric is ${DMALPHA}"
+echo ""
+##RUNSCRIPTS, don't change
+
+crun qiime diversity alpha-group-significance \
+  --i-alpha-diversity ${COREMETRICS}/${DMALPHA}_vector${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --m-metadata-file ${METAPATH} \
+  --o-visualization ${COREMETRICS}/${DMALPHA}-group-significance${FILTTAX}${FILTCOV}${FILTMETA}.qzv
+
+##Beta group significance comparisons
+#Performs both permdisp routine for dispersion analysis and permanova for centroids
+echo "beta comparison variable is ${BETACOMPVAR}"
+echo "beta diversity metric is ${DMBETA}"
+echo "files output to ${COREMETRICS}/${DMBETA}-significance_perm<disp/anova>_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTMETA}.qzv"
+echo ""
+crun qiime diversity beta-group-significance \
+  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --m-metadata-file ${METAPATH} \
+  --m-metadata-column ${BETACOMPVAR} \
+  --p-method 'permdisp' \
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permdisp_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
+  --p-pairwise
+
+crun qiime diversity beta-group-significance \
+  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --m-metadata-file ${METAPATH} \
+  --m-metadata-column ${BETACOMPVAR} \
+  --p-method 'permanova' \
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permanova_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
+  --p-pairwise
+;;
+
+7)
+
+echo "7 running"
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+echo "adonis formula is: $PERMFORM"
+echo "Metadata path is: $METAPATH"
+echo "beta diversity metric is ${DMBETA}"
+echo "files output to ${COREMETRICS}/${DMBETA}-significance_adonis_Loc_Rp${FILTTAX}${FILTCOV}${FILTMETA}.qzv"
+echo ""
+
+if [ -z $FILTCOV ]
+then
+echo "coverage filter not specified"
+else
+FILTCOV=_$FILTCOV
+fi
+
+if [ -z $FILTMETA ]
+then
+echo "metadata filter not specified"
+else
+FILTMETA=_$FILTMETA
+fi
+
+if [ -z $FILTTAX ]
+then
+echo "taxonomy filter not specified"
+else
+FILTTAX=_$FILTTAX
+fi
+
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
+
+crun qiime diversity adonis \
+  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --m-metadata-file $METAPATH \
+  --p-formula ${PERMFORM}  \
+  --p-permutations 999 \
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_Loc_Rp${FILTTAX}${FILTCOV}${FILTMETA}.qzv 
+;;
+
 *)
 	echo "Nothing to do"
 ;;
 esac
+
 
