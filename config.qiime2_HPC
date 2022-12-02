@@ -2,9 +2,9 @@ CONFIG FILE FOR QIIME2_HPC
 
 ----------Filepaths---------------------------------------------------------------
 
-.fastq files: /cm/shared/courses/gauthier/Microbiome/DG_19_21/fastq
+.fastq files: /cm/shared/courses/gauthier/Microbiome/SC_microbiome_v2/fastq
 
-metadata files: /cm/shared/courses/gauthier/Microbiome/newtest/metadata/metadata_19_21b.txt
+metadata files: /cm/shared/courses/gauthier/Microbiome/SC_microbiome_v2/metadata/metadata_second_run.txt
 
 __________________________________________________________________________________
 
@@ -17,16 +17,16 @@ GACTACHVGGGTATCTAATCC		qiime feature-classifier extract-reads --p-r-primer  		Re
 550				qiime feature-classifier extract-reads --p-max-length		maximum expected amplicon size
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-----------Script 2: feature classifier------------------------------------------------------------------------------------------------
-paired		qiime tools import --type <paired/single>					paired or single end reads
+----------Script 3: file import------------------------------------------------------------------------------------------------
+single		qiime tools import --type <paired/single>					paired or single end reads
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 4: preprocessing-------------------------------------------------------------------------------------------------------------------------
-275		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
-275             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
+200		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
+NA             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
 17		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
-21              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
+NA              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
 2		qiime dada2 denoise-paired --p-min-fold-parent-over-abundance <integer>		Set fold-overabundance for chimera detection
 50		qiime diversity alpha-rarefaction --p-steps <integer>				# of sampling steps between min and max depth (below)
 1000		qiime diversity alpha-rarefaction --p-min-depth	<integer>			minimum sampling depth for alpha rarefaction

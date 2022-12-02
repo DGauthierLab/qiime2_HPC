@@ -28,7 +28,7 @@ if [ -n $2 ]; then
         FASTQ=$(grep '.fastq files:' $CONFIG | awk '{print $3;}')
         METAPATH=$(grep 'metadata files:' $CONFIG | awk '{print $3;}')
 	SILVAVERSION=$(grep 'qiime rescript get-silva-data --p-version <integer>' $CONFIG | awk '{print $1;}') 
-	SILVATRGET=$(grep 'qiime rescript get-silva-data --p-target <string>' $CONFIG | awk '{print $1;}')
+	SILVATARGET=$(grep 'qiime rescript get-silva-data --p-target <string>' $CONFIG | awk '{print $1;}')
 	READTYPE=$(grep 'qiime tools import --type <paired/single>' $CONFIG | awk '{print $1;}') 
 	FPRIMER=$(grep 'qiime feature-classifier extract-reads --p-f-primer' $CONFIG | awk '{print $1;}')
 	RPRIMER=$(grep 'qiime feature-classifier extract-reads --p-r-primer' $CONFIG | awk '{print $1;}')
@@ -186,7 +186,6 @@ crun qiime demux summarize \
 
 	echo "Module 3 completed successfully"
 ;;
-
 	4)
 
                 echo "Running 4_DADA2_preprocessing_qiime2" 
@@ -216,6 +215,9 @@ then
 
 else
 
+	if  [[ $READTYPE == "paired" ]]
+	then
+
 crun qiime dada2 denoise-paired \
   --i-demultiplexed-seqs ../demux/demux-${READTYPE}-end.qza \
   --p-trunc-len-f ${FTRUNC} \
@@ -228,6 +230,22 @@ crun qiime dada2 denoise-paired \
   --p-min-fold-parent-over-abundance ${CHIMERA} \
   --p-n-threads 0
 
+	elif [[ $READTYPE == "single" ]]
+	then
+
+##follows from 1_file_import_qiime2 script
+#examine demux-paired-end.qzv file to estimate settings
+#note min-fold-parent-over-abundance setting here (reduces # of detected chimeras)
+crun qiime dada2 denoise-single \
+  --i-demultiplexed-seqs ../demux/demux-single-end.qza \
+  --p-trunc-len ${FTRUNC} \
+  --p-trim-left ${FTRIM} \
+  --o-representative-sequences rep-seqs.qza \
+  --o-table table.qza \
+  --o-denoising-stats stats.qza \
+  --p-min-fold-parent-over-abundance ${CHIMERA} \
+  --p-n-threads 0
+	fi
 fi
 
 if [[ -f "stats.qzv" ]]
