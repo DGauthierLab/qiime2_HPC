@@ -186,6 +186,7 @@ crun qiime demux summarize \
 
 	echo "Module 3 completed successfully"
 ;;
+
 	4)
 
                 echo "Running 4_DADA2_preprocessing_qiime2" 
@@ -287,7 +288,7 @@ then
 else
 
 crun qiime feature-classifier classify-sklearn \
-  --i-classifier ../training_feature_classifiers/silva138_AB_V1-V2_classifier.qza \
+  --i-classifier ../training_feature_classifiers/slv_ssu_138.1_classifier.qza \
   --i-reads rep-seqs.qza \
   --o-classification taxonomy.qza
 
@@ -334,17 +335,21 @@ cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 		echo "Metadata filtration is: $FILTMETA"
                 echo "          Metadata argument is: --p-where "$MFILT""
 		echo ""
-if [[ -z $FILTTAX ]]
+
+FILTTAX=_$FILTTAX
+FILTMETA=_$FILTMETA
+
+
+if [[ $FILTTAX == "_NA" ]]
         then
                 echo "taxonomic filter not specified"
         else
-                FILTTAX=_$FILTTAX
 
-                if [[ $TFILT1 == "none" ]] || [[ $TFILT1A == "none" ]]
+                if [[ $TFILT1 == "NA" ]] || [[ $TFILT1A == "NA" ]]
                         then
                                 echo "taxonomic filter 1 not specified"
 
-			elif    [[ -z $TMODE1 ]]
+			elif    [[ $TMODE1 = "NA" ]]
                                         then
                                                 echo "taxonomic mode 1 not specified"
 
@@ -357,11 +362,11 @@ if [[ -z $FILTTAX ]]
                                                 --o-filtered-table table${FILTTAX}.qza
                 fi
 
-		if [[ $TFILT2 == "none" ]] || [[ $TFILT2A == "none" ]]
+		if [[ $TFILT2 == "NA" ]] || [[ $TFILT2A == "NA" ]]
                         then
                                 echo "taxonomic filter 2 not specified"
 
-			elif    [[ -z $TMODE2 ]]
+			elif    [[ $TMODE2 == "NA" ]]
                                         then
                                                 echo "taxonomic mode 2 not specified"
 
@@ -375,12 +380,12 @@ if [[ -z $FILTTAX ]]
                                                 --o-filtered-table table${FILTTAX}.qza
                         fi
 
-                if [[ $TFILT3 == "none" ]] || [[ $TFILT3A == "none" ]]
+                if [[ $TFILT3 == "NA" ]] || [[ $TFILT3A == "NA" ]]
 
                         then
                                 echo "taxonomic filter 3 not specified"
 
-                        elif   [[ -z $TMODE3 ]]
+                        elif   [[ $TMODE3 == "NA" ]]
                                         then
                                                 echo "taxonomic mode 3 not specified"
 
@@ -394,7 +399,7 @@ if [[ -z $FILTTAX ]]
                 fi
 fi
 
-if [[ -z $FILTCOV ]]
+if [[ $FILTCOV == "NA" ]]
         then
                 echo "coverage filter not specified"
         else
@@ -406,7 +411,7 @@ if [[ -z $FILTCOV ]]
                           --o-filtered-table table${FILTTAX}${FILTCOV}.qza
 fi
 
-if [[ -z $FILTMETA ]]
+if [[ $FILTMETA == "_NA" ]]
         then
                 echo "metadata filter not specified"
 
