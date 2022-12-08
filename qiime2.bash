@@ -123,10 +123,10 @@ crun qiime rescript dereplicate \
 
 crun qiime feature-classifier extract-reads \
 --i-sequences training_feature_classifiers/silva-138.1-ssu-nr99-seqs_cleaned_filt_derep.qza \
---p-f-primer CCTACGGGNGGCWGCAG \
---p-r-primer GACTACHVGGGTATCTAATCC \
---p-min-length 350 \
---p-max-length 550 \
+--p-f-primer ${FPRIMER} \
+--p-r-primer ${RPRIMER} \
+--p-min-length ${MINAMP} \
+--p-max-length ${MAXAMP} \
 --o-reads training_feature_classifiers/ref-seqs_silva138_NR99.qza
 
 crun qiime feature-classifier fit-classifier-naive-bayes \
@@ -287,7 +287,7 @@ then
 else
 
 crun qiime feature-classifier classify-sklearn \
-  --i-classifier ../training_feature_classifiers/slv_ssu_138.1_classifier.qza \
+  --i-classifier ../training_feature_classifiers/silva138_AB_V1-V2_classifier.qza \
   --i-reads rep-seqs.qza \
   --o-classification taxonomy.qza
 
