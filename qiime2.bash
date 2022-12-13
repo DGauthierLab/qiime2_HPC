@@ -44,7 +44,8 @@ if [ -n $2 ]; then
         ALPHARSTEPS=$(grep 'qiime diversity alpha-rarefaction --p-steps <integer>' $CONFIG | awk '{print $1;}')
         FILTCOV=$(grep 'qiime feature-table filter-samples --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
         FILTTAX=$(grep 'FILTTAX filename variable <string>' $CONFIG | awk '{print $1;}')
-        FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
+	FILTFREQF=$(grep 'qiime feature-table filter-features' $CONFIG | awk '{print $1;}')
+	FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
         TFILT1=$(grep 'taxonomy filtration match argument 1 <exclude/include> <string>' $CONFIG | awk '{print $1;}')
 	TFILT1A=$(grep 'taxonomy filtration match argument 1 <exclude/include> <string>' $CONFIG | awk '{print $2;}')
         TMODE1=$(grep 'taxonomy filtration mode argument 1 <exact/contains>' $CONFIG | awk '{print $1;}')
@@ -373,7 +374,7 @@ if [[ $FILTTAX == "_NA" ]]
                                         else
 
                                                 crun qiime taxa filter-table \
-                                                --i-table table.qza \
+                                                --i-table table${FILTTAX}.qza \
                                                 --i-taxonomy taxonomy.qza \
                                                 --p-mode ${TMODE2} \
                                                 --p-${TFILT2} "$TFILT2A" \
@@ -402,6 +403,8 @@ fi
 if [[ $FILTCOV == "NA" ]]
         then
                 echo "coverage filter not specified"
+		FILTCOV=_$FILTCOV
+		mv table${FILTTAX}.qza table${FILTTAX}${FILTCOV}.qza
         else
                 COV=$FILTCOV
                 FILTCOV=_$FILTCOV
@@ -411,46 +414,60 @@ if [[ $FILTCOV == "NA" ]]
                           --o-filtered-table table${FILTTAX}${FILTCOV}.qza
 fi
 
+if [[ $FILTFREQF == "NA" ]]
+	then
+		echo "feature frequency filter not specified"
+		FILTFREQF=_$FILTFREQF
+		mv table${FILTTAX}${FILTCOV}.qza table${FILTTAX}${FILTCOV}${FILTFREQF}.qza
+		
+	else
+		FF=$FILTFREQF
+		FILTFREQF=_$FILTFREQF
+			crun qiime feature-table filter-features \
+  				--i-table table.qza \
+  				--p-min-frequency $FF \
+  				--o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}.qza
+fi
+
 if [[ $FILTMETA == "_NA" ]]
         then
                 echo "metadata filter not specified"
-
+		mv table${FILTTAX}${FILTCOV}${FILTFREQF}.qza table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza
         else
-                FILTMETA=_$FILTMETA
 		crun qiime feature-table filter-samples \
-                  --i-table table${FILTTAX}${FILTCOV}.qza \
+                  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}.qza \
                   --m-metadata-file $METAPATH \
                   --p-where "$MFILT" \
-                  --o-filtered-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza
+                  --o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza
 fi
 
 ##Summarize the new filtered table
 crun qiime feature-table summarize \
-  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
-  --o-visualization table${FILTTAX}${FILTCOV}${FILTMETA}.qzv \
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --o-visualization table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv \
   --m-sample-metadata-file $METAPATH
 
 ##Alpha and Beta diversity metrics
 crun qiime diversity core-metrics-phylogenetic \
   --i-phylogeny rooted-tree.qza \
-  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
   --p-sampling-depth $COV \
   --m-metadata-file $METAPATH \
-  --output-dir core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
+  --output-dir core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
 
 ##change filenames to reflect filtering parameters
-cd core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA} &&
+cd core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA} &&
 for f in * ;
-do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTMETA}.qz\2/g") ;
+do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1$${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qz\2/g") ;
 done
 cd ..
 
 ##Following assumes taxonomic classification has already been run
 crun qiime taxa barplot \
---i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
 --i-taxonomy taxonomy.qza \
 --m-metadata-file $METAPATH \
---o-visualization barplot${FILTTAX}${FILTCOV}${FILTMETA}.qzv
+--o-visualization barplot${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
 
         echo "Module 5 completed successfully"
 ;;
@@ -556,9 +573,83 @@ crun qiime diversity adonis \
   --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_Loc_Rp${FILTTAX}${FILTCOV}${FILTMETA}.qzv 
 ;;
 
+8)
+
+echo "8 running"
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+echo "Metadata path is: $METAPATH"
+echo "beta diversity metric is ${DMBETA}"
+echo "taxonomic level set to ${COLV}"
+echo "files output to ${COREMETRICS}/comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qzv"
+echo ""
+
+if [ -z $FILTCOV ]
+then
+echo "coverage filter not specified"
+else
+FILTCOV=_$FILTCOV
+fi
+
+if [ -z $FILTMETA ]
+then
+echo "metadata filter not specified"
+else
+FILTMETA=_$FILTMETA
+fi
+
+if [ -z $FILTTAX ]
+then
+echo "taxonomy filter not specified"
+else
+FILTTAX=_$FILTTAX
+fi
+
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTMETA}
+
+##RUNSCRIPTS, don't change
+
+crun qiime taxa collapse \
+  --i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-level ${COLV} \
+  --o-collapsed-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qza
+
+##ANCOM analysis
+
+crun qiime composition add-pseudocount \
+--i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--o-composition-table comp-table${FILTTAX}${FILTCOV}${FILTMETA}.qza
+
+crun qiime composition ancom \
+--i-table comp-table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--m-metadata-file $METAPATH \
+--m-metadata-column $BETACOMPVAR \
+--o-visualization ancom-$BETACOMPVAR-${FILTTAX}${FILTCOV}${FILTMETA}.qzv
+
+#ANCOM analysis at specific taxonomic level
+
+crun qiime taxa collapse \
+--i-table table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--i-taxonomy taxonomy.qza \
+--p-level ${COLV} \
+--o-collapsed-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qza 
+
+crun qiime composition add-pseudocount \
+--i-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--o-composition-table comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qza 
+
+crun qiime composition ancom \
+--i-table comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qza \
+--m-metadata-file $METAPATH \
+--m-metadata-column $BETACOMPVAR \
+--o-visualization comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTMETA}.qzv
+;;
+
 *)
+
 	echo "Nothing to do"
 ;;
+
 esac
 
 

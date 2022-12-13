@@ -4,7 +4,7 @@ CONFIG FILE FOR QIIME2_HPC
 
 .fastq files: /cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_instructor/fastq
 
-metadata files: /cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_instructor/metadata/metadata_RIPBIO_V1V2.text
+metadata files: /cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_instructor/metadata/metadata_RIPBIO_V1V2.txt
 
 __________________________________________________________________________________
 
@@ -35,22 +35,22 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 
 ----------Script 5: filter and run core metrics-----------------------------------------------------------------------------------------------------------
 5000           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
-allassigned		FILTTAX filename variable <string>						Descriptive string for taxonomy filtration
-			FILTMETA filename variable <string>						Descriptive string for metadata filtration
+allassigned		FILTTAX filename variable <string>				Descriptive string for taxonomy filtration
+10			qiime feature-table filter-features --p-min-frequency <integer>		Minimum cutoff for frequency-based filtration (feature)
+NA			FILTMETA filename variable <string>					Descriptive string for metadata filtration
 
 *****Enter <none> for taxonomy filtration functions if not using*****
 
-exclude chloroplast,Rickettsia,unassigned		taxonomy filtration match argument 1 <exclude/include> <string>
+exclude chloroplast,mitochondria,unassigned		taxonomy filtration match argument 1 <exclude/include> <string>
 contains						taxonomy filtration mode argument 1 <exact/contains>
 
 exclude d__Bacteria					taxonomy filtration match argument 2 <exclude/include> <string>
 exact							taxonomy filtration mode argument 2 <exact/contains>
 
-none none						taxonomy filtration match argument 3 <exclude/include> <string>
-none							taxonomy filtration mode argument 3 <exact/contains>
+NA NA							taxonomy filtration match argument 3 <exclude/include> <string>
+NA							taxonomy filtration mode argument 3 <exact/contains>
 
-"[Biome] LIKE 'wild caught%' OR [Biome] LIKE 'control'"		metadata filtration argument 1  <double quoted mySQL where statement>
-----------------------------------------------------------------------------------------------------------------------------------------------------------
+"[Biome] LIKE 'wild caught%' OR [Biome] LIKE 'control'"		metadata filtration argument 1  <double quoted mySQL where statement----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 ----------Script 6: univariate stats-----------------------------------------------------------------------------------------------------------
