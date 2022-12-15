@@ -55,7 +55,8 @@ if [ -n $2 ]; then
         TFILT3=$(grep 'taxonomy filtration match argument 3 <exclude/include> <string>' $CONFIG | awk '{print $1;}')
         TFILT3A=$(grep 'taxonomy filtration match argument 3 <exclude/include> <string>' $CONFIG | awk '{print $2;}')
 	TMODE3=$(grep 'taxonomy filtration mode argument 3 <exact/contains>' $CONFIG | awk '{print $1;}')
-        MFILT=$(grep 'metadata filtration argument 1  <double quoted mySQL where statement>' $CONFIG | grep -oP '\"\K.*(?=\")')
+        TAXREMOVAL=$(grep 'Filepath to list of taxa to be filtered' $CONFIG | awk '{print $1;}')
+	MFILT=$(grep 'metadata filtration argument 1  <double quoted mySQL where statement>' $CONFIG | grep -oP '\"\K.*(?=\")')
         DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
         DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
         BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string>' $CONFIG | awk '{print $1;}')
@@ -74,6 +75,7 @@ case $FUNKTION in
 		echo "place tab-delimited .txt metadata file in metadata folder"
 		echo "place all .fastq files (.gz is OK) in fastq folder.  Ensure that only .fastq files are present in the folder"
 ;;
+
 	2)
 		echo "module 2 running.  taxonomy classifier training"
 		echo "Silva version is $SILVAVERSION"
@@ -320,8 +322,7 @@ crun qiime diversity alpha-rarefaction \
 fi
 ;;
 
-
-5)
+	5)
 cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 
                 echo "Running 5_filtering_and_coremetrics_qiime2" 
@@ -470,6 +471,23 @@ crun qiime taxa barplot \
 --o-visualization barplot${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
 
         echo "Module 5 completed successfully"
+;;
+
+	51)
+	echo "Module 5a running"
+	echo "Input file is $TAXREMOVAL"
+	cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+                while IFS= read -r line
+                        do  
+                        echo "$line"
+			crun qiime taxa filter-table \
+                                --i-table table_${FILTTAX}.qza \
+				--i-taxonomy taxonomy.qza \
+                                --p-mode exact \
+                                --p-exclude "$line"\
+                                --o-filtered-table table_${FILTTAX}.qza
+			done < $TAXREMOVAL
+	echo "Module 5a complete"
 ;;
 
 6)
@@ -646,10 +664,8 @@ crun qiime composition ancom \
 ;;
 
 *)
-
 	echo "Nothing to do"
 ;;
-
 esac
 
 

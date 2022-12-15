@@ -1,4 +1,4 @@
-CONFIG FILE FOR QIIME2_HPC
+]CONFIG FILE FOR QIIME2_HPC
 
 ----------Filepaths---------------------------------------------------------------
 
@@ -9,6 +9,8 @@ metadata files: /cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_ins
 __________________________________________________________________________________
 
 ----------Script 2: feature classifier-------------------------------------------------------------------------------------------------------------------------
+Primers and min/max sizes are set according to specific variable regions used.  Make sure to set primers to target-specific sequences (NOT including tails)
+
 138.1		qiime rescript get-silva-data --p-version <integer>				Database version (silva)
 SSURef_NR99	qiime rescript get-silva-data --p-target <string>				Database target (silva)
 AGRGTTTGATYMTGGCTCAG		qiime feature-classifier extract-reads --p-f-primer		Forward amplicon primer sequence
@@ -50,8 +52,12 @@ exact							taxonomy filtration mode argument 2 <exact/contains>
 NA NA							taxonomy filtration match argument 3 <exclude/include> <string>
 NA							taxonomy filtration mode argument 3 <exact/contains>
 
-"[Biome] LIKE 'wild caught%' OR [Biome] LIKE 'control'"		metadata filtration argument 1  <double quoted mySQL where statement----------------------------------------------------------------------------------------------------------------------------------------------------------
+"[Biome] LIKE 'wild caught%' OR [Biome] LIKE 'control'"		metadata filtration argument 1  <double quoted mySQL where statement
+----------------------------------------------------------------------------------------------------------------------------------------------------------
 
+-----------Script 5a: mass-filtering from file list of taxa-----------------------------------------------------------------------------------------------
+
+/cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_instructor/taxalist.txt	Filepath to list of taxa to be filtered
 
 ----------Script 6: univariate stats-----------------------------------------------------------------------------------------------------------
 shannon			alpha diversity metric <string>

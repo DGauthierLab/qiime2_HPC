@@ -22,13 +22,14 @@ module load container_env qiime2/2022.08
 #3: file import
 #4: DADA2 preprocessing
 #5: filtering and coremetrics
+#5a: mass-filtering of multiple taxa
 #6: univariate statistics
 #7: multivariate statistics
 #8: ANCOM
 
 
 #Qiime2 module to run
-MODULE=5
+MODULE=51
 
 bash qiime2_HPC/qiime2.bash $MODULE qiime2_HPC/config.qiime2_HPC
 
