@@ -425,7 +425,7 @@ if [[ $FILTFREQF == "NA" ]]
 		FF=$FILTFREQF
 		FILTFREQF=_$FILTFREQF
 			crun qiime feature-table filter-features \
-  				--i-table table.qza \
+  				--i-table table${FILTTAX}${FILTCOV}.qza \
   				--p-min-frequency $FF \
   				--o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}.qza
 fi
