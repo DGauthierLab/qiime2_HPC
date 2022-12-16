@@ -49,7 +49,7 @@ if [ -n $2 ]; then
         TFILTEXCON=$(grep 'qiime taxa filter-seqs --p-exclude <comma separated string>' $CONFIG | awk '{print $1;}')
         TFILTINCON=$(grep 'qiime taxa filter-seqs --p-include <comma separated string>' $CONFIG | awk '{print $1;}')
         TAXREMOVAL=$(grep 'qiime taxa filter-seqs --p-exclude <filepath>' $CONFIG | awk '{print $1;}')
-	MFILT=$(grep 'metadata filtration argument 1  <double quoted mySQL where statement>' $CONFIG | grep -oP '\"\K.*(?=\")')
+	MFILT=$(grep 'qiime feature-table filter-samples --p-where' $CONFIG | grep -oP '\"\K.*(?=\")')
         DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
         DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
         BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string>' $CONFIG | awk '{print $1;}')
@@ -385,7 +385,7 @@ if [[ $FILTTAX == "_NA" ]]
                                 			--i-taxonomy taxonomy.qza \
                                 			--p-mode exact \
                                 			--p-exclude "$line" \
-                                			--o-filtered-table table_${FILTTAX}.qza
+                                			--o-filtered-table table${FILTTAX}.qza
                         done < $TAXREMOVAL
 		fi
 fi

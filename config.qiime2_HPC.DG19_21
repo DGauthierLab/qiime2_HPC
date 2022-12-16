@@ -28,7 +28,7 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 240		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
 240             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
 17		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
-20              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
+21              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
 2		qiime dada2 denoise-paired --p-min-fold-parent-over-abundance <integer>		Set fold-overabundance for chimera detection
 50		qiime diversity alpha-rarefaction --p-steps <integer>				# of sampling steps between min and max depth (below)
 500		qiime diversity alpha-rarefaction --p-min-depth	<integer>			minimum sampling depth for alpha rarefaction
@@ -45,7 +45,7 @@ Integer values for filtering (automatically populate filenames and set cutoffs):
 String values for filtering (values here populate filenames.  MAKE SURE TO MATCH TO SETTINGS BELOW AND VICE VERSA.  Enter NA if not using)
 
 allassigned		FILTTAX filename variable <string>				Descriptive string for taxonomy filtration
-NA			FILTMETA filename variable <string>					Descriptive string for metadata filtration
+wildcaught_control			FILTMETA filename variable <string>					Descriptive string for metadata filtration
 
 *****Enter NA for taxonomy filtration functions if not using*****
 
