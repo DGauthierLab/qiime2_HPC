@@ -25,7 +25,7 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 --------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 4: preprocessing-------------------------------------------------------------------------------------------------------------------------
-240		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
+245		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
 240             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
 20		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
 20              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
@@ -39,12 +39,12 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 
 Integer values for filtering (automatically populate filenames and set cutoffs):
 
-5000           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
-10                      qiime feature-table filter-features --p-min-frequency <integer>         Minimum cutoff for frequency-based filtration (feature)
+NA           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
+NA                      qiime feature-table filter-features --p-min-frequency <integer>         Minimum cutoff for frequency-based filtration (feature)
 
 String values for filtering (values here populate filenames.  MAKE SURE TO MATCH TO SETTINGS BELOW AND VICE VERSA.  Enter NA if not using)
 
-allassigned_negfilter	FILTTAX filename variable <string>				Descriptive string for taxonomy filtration
+NA			FILTTAX filename variable <string>				Descriptive string for taxonomy filtration
 NA			FILTMETA filename variable <string>					Descriptive string for metadata filtration
 
 *****Enter NA for taxonomy filtration functions if not using*****
@@ -55,7 +55,7 @@ NA		 				qiime taxa filter-seqs --p-include <comma separated string>     uses --
 
 *****exact-matches for exclusion should be provided as a separate .txt file with matches listed line by line*****
 
-/cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_instructor/taxalist.txt		qiime taxa filter-seqs --p-exclude <filepath>			uses --p-mode exact
+NA		qiime taxa filter-seqs --p-exclude <filepath>			uses --p-mode exact
 
 *****requires mySQL where statement for metadata filtration*****
 

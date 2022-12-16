@@ -29,8 +29,9 @@ module load container_env qiime2/2022.08
 
 
 #Qiime2 module to run
-MODULE=51
+MODULE=4
 
-bash qiime2_HPC/qiime2.bash $MODULE qiime2_HPC/config.qiime2_HPC
+#If you change config files alter this line
+bash qiime2_HPC/qiime2.bash $MODULE qiime2_HPC/config.qiime2_HPC.RIPBIO_F22
 
 
