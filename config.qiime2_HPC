@@ -1,14 +1,16 @@
-]CONFIG FILE FOR QIIME2_HPC
+CONFIG FILE FOR QIIME2_HPC
 
 ----------Filepaths---------------------------------------------------------------
 
-.fastq files: /cm/shared/courses/gauthier/Microbiome/DG_19_21/fastq
+/cm/shared/courses/gauthier/Microbiome/DG_19_21/fastq					full path to .fastq files
 
-metadata files: /cm/shared/courses/gauthier/Microbiome/DG_19_21/metadata/metadata_19_21b.txt
+/cm/shared/courses/gauthier/Microbiome/DG_19_21/metadata/metadata_19_21b.txt		full path to metadata file
 
 __________________________________________________________________________________
 
 ----------Script 2: feature classifier-------------------------------------------------------------------------------------------------------------------------
+see: https://docs.qiime2.org/2022.11/tutorials/feature-classifier/
+
 Primers and min/max sizes are set according to specific variable regions used.  Make sure to set primers to target-specific sequences (NOT including tails)
 
 138.1		qiime rescript get-silva-data --p-version <integer>				Database version (silva)
@@ -20,12 +22,17 @@ TGCTGCCTCCCGTAGGAGT		qiime feature-classifier extract-reads --p-r-primer  		Reve
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 3: file import------------------------------------------------------------------------------------------------
+see: https://docs.qiime2.org/2022.11/tutorials/importing/
+
 paired		qiime tools import --type <paired/single>					paired or single end reads
 
 --------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 4: preprocessing-------------------------------------------------------------------------------------------------------------------------
-240		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
+see: https://benjjneb.github.io/dada2/
+see: https://docs.qiime2.org/2022.11/tutorials/overview/
+
+245		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
 240             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
 17		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
 20              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
@@ -36,6 +43,7 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 5: filter and run core metrics-----------------------------------------------------------------------------------------------------------
+see: https://docs.qiime2.org/2022.11/tutorials/filtering/
 
 Integer values for filtering (automatically populate filenames and set cutoffs):
 
@@ -77,7 +85,16 @@ Location*Rp_status	qiime diversity adonis --p-formula <string>					Use var1+var2
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 8: ANCOM---------------------------------------------------------------------------------------------------------------------------------      
+see: https://docs.qiime2.org/2022.11/tutorials/moving-pictures/
+
 5			qiime taxa collapse --p-level <integer>			1-Kingdom, 2-Phylum, 3-Class, 4-Order, 5-Family, 6-Genus, 7-Species (no collapse)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------Script 9: Core Features-------------------------------------------------------------------------------------------------------------------------
+see: https://docs.qiime2.org/2022.11/plugins/available/feature-table/core-features/
+
+0.5			qiime feature-table core-features --p-min-fraction <0.0, 1.0>		minimum fraction of samples in which feature must be observed
+1.0			qiime feature-table core-features --p-max-fraction <0.0, 1.0>      	maximum fraction of samples in which feature must be observed
+11			qiime feature-table core-features --p-steps <integer>
 
 

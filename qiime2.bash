@@ -25,8 +25,8 @@ if [ -n $2 ]; then
         echo `date` "Files output to: " $(pwd)
         echo ""; echo `date` "Reading config file... "
         CONFIG=$2
-        FASTQ=$(grep '.fastq files:' $CONFIG | awk '{print $3;}')
-        METAPATH=$(grep 'metadata files:' $CONFIG | awk '{print $3;}')
+        FASTQ=$(grep 'full path to .fastq files' $CONFIG | awk '{print $1;}')
+        METAPATH=$(grep 'full path to metadata file' $CONFIG | awk '{print $1;}')
 	SILVAVERSION=$(grep 'qiime rescript get-silva-data --p-version <integer>' $CONFIG | awk '{print $1;}') 
 	SILVATARGET=$(grep 'qiime rescript get-silva-data --p-target <string>' $CONFIG | awk '{print $1;}')
 	READTYPE=$(grep 'qiime tools import --type <paired/single>' $CONFIG | awk '{print $1;}') 
@@ -55,6 +55,9 @@ if [ -n $2 ]; then
         BETACOMPVAR=$(grep 'comparison variable for univariate beta diversity comparison <string>' $CONFIG | awk '{print $1;}')
         PERMFORM=$(grep 'qiime diversity adonis --p-formula <string>' $CONFIG | awk '{print $1;}')
         COLV=$(grep 'qiime taxa collapse --p-level <integer>' $CONFIG | awk '{print $1;}')
+	COREMIN=$(grep 'qiime feature-table core-features --p-min-fraction <0.0, 1.0>' $CONFIG | awk '{print $1;}')
+	COREMAX=$(grep 'qiime feature-table core-features --p-max-fraction <0.0, 1.0>' $CONFIG | awk '{print $1;}')
+	CORESTEPS=$(grep 'qiime feature-table core-features --p-steps <integer>' $CONFIG | awk '{print $1;}')
 fi
 
 echo "Done reading config file.  Proceeding to module $1"
@@ -130,7 +133,7 @@ crun qiime feature-classifier fit-classifier-naive-bayes \
 --i-reference-taxonomy training_feature_classifiers/silva-138.1-ssu-nr99-tax_derep.qza \
 --o-classifier training_feature_classifiers/slv_ssu_138.1_classifier.qza
 
-	echo "Module 2 completed successfully"
+	echo "Module 2 completed"
 ;;
 
 	3)
@@ -180,7 +183,7 @@ crun qiime demux summarize \
 
 ##Output from demux-joined.qzv should be examined to determine and set parameters for next step if not using dada2
 
-	echo "Module 3 completed successfully"
+	echo "Module 3 completed"
 ;;
 
 	4)
@@ -313,6 +316,8 @@ crun qiime diversity alpha-rarefaction \
   --m-metadata-file $METAPATH \
   --o-visualization alpha-rarefaction.qzv
 fi
+
+echo "module 4 completed."
 ;;
 
 	5)
@@ -331,6 +336,8 @@ cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
                 echo ""
 		echo "Metadata filtration is: $FILTMETA"
                 echo "          Metadata argument is: --p-where "$MFILT""
+		echo ""
+		echo "Excluding exact taxa found in: $TAXREMOVAL"
 		echo ""
 
 FILTTAX=_$FILTTAX
@@ -450,7 +457,7 @@ crun qiime diversity core-metrics-phylogenetic \
 ##change filenames to reflect filtering parameters
 cd core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA} &&
 for f in * ;
-do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1$${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qz\2/g") ;
+do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qz\2/g") ;
 done
 cd ..
 
@@ -461,11 +468,12 @@ crun qiime taxa barplot \
 --m-metadata-file $METAPATH \
 --o-visualization barplot${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
 
-        echo "Module 5 completed successfully"
+        echo "Module 5 completed"
 ;;
 
 6)
 echo "6 running"
+echo ""
 
 if [ -z $FILTCOV ]
 then
@@ -489,9 +497,9 @@ FILTTAX=_$FILTTAX
 fi
 if [ -z $FILTFREQF ]
 then
-echo "coverage filter not specified"
+echo "feature frequency filter not specified"
 else
-FILTCOV=_$FILTFREQF
+FILTFREQF=_$FILTFREQF
 fi
 
 
@@ -529,11 +537,13 @@ crun qiime diversity beta-group-significance \
   --p-method 'permanova' \
   --o-visualization ${COREMETRICS}/${DMBETA}-significance_permanova_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv \
   --p-pairwise
+echo "module 6 completed."
 ;;
 
 7)
 
 echo "7 running"
+echo ""
 cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 echo "adonis formula is: $PERMFORM"
 echo "Metadata path is: $METAPATH"
@@ -564,9 +574,9 @@ fi
 
 if [ -z $FILTFREQF ]
 then
-echo "coverage filter not specified"
+echo "feature frequency filter not specified"
 else
-FILTCOV=_$FILTFREQF
+FILTFREQF=_$FILTFREQF
 fi
 
 COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
@@ -577,6 +587,8 @@ crun qiime diversity adonis \
   --p-formula ${PERMFORM}  \
   --p-permutations 999 \
   --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_Loc_Rp${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv 
+echo "module 7 completed."
+echo ""
 ;;
 
 8)
@@ -586,7 +598,7 @@ cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 echo "Metadata path is: $METAPATH"
 echo "beta diversity metric is ${DMBETA}"
 echo "taxonomic level set to ${COLV}"
-echo "files output to ${COREMETRICS}/comp-collapseLevel${COLV}-table$${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv"
+echo "files output to ${COREMETRICS}/comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv"
 echo ""
 
 if [ -z $FILTCOV ]
@@ -612,9 +624,9 @@ fi
 
 if [ -z $FILTFREQF ]
 then
-echo "coverage filter not specified"
+echo "feature frequency filter not specified"
 else
-FILTCOV=_$FILTFREQF
+FILTFREQF=_$FILTFREQF
 fi
 
 COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
@@ -656,11 +668,61 @@ crun qiime composition ancom \
 --m-metadata-file $METAPATH \
 --m-metadata-column $BETACOMPVAR \
 --o-visualization comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
+echo "module 8 completed."
+;;
+
+9)
+echo "module 9 running.  calculating core features"
+echo ""
+echo "core features calculated between $COREMIN and $COREMAX proportion of samples in $CORESTEPS steps"
+echo ""
+
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+
+if [ -z $FILTCOV ]
+then
+echo "coverage filter not specified"
+else
+FILTCOV=_$FILTCOV
+fi
+
+if [ -z $FILTMETA ]
+then
+echo "metadata filter not specified"
+else
+FILTMETA=_$FILTMETA
+fi
+
+if [ -z $FILTTAX ]
+then
+echo "taxonomy filter not specified"
+else
+FILTTAX=_$FILTTAX
+fi
+
+if [ -z $FILTFREQF ]
+then
+echo "feature frequency filter not specified"
+else
+FILTFREQF=_$FILTFREQF
+fi
+
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
+
+crun qiime feature-table core-features\
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --p-min-fraction $COREMIN \
+  --p-max-fraction $COREMAX \
+  --p-steps $CORESTEPS \
+  --o-visualization ${COREMETRICS}/corefeatures${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv 
+
+
 ;;
 
 *)
 	echo "Nothing to do"
 ;;
 esac
+
 
 
