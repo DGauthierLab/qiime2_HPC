@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-VERSION=1.1
+VERSION=1.2
 #This script is a bash wrapper to perform various functions of qiime2 analysis 
 
 #Prints out title and contact info
@@ -384,18 +384,26 @@ if [[ $FILTTAX == "_NA" ]]
 				else
         				echo "Input file is $TAXREMOVAL"
 					[[ -f $TAXREMOVAL ]] && echo "$TAXREMOVAL exists."
-                			while IFS= read -r line
-                        		do  
-                        		echo "removing $line"
-                        			crun qiime taxa filter-table \
-                                			--i-table table${FILTTAX}.qza \
-                                			--i-taxonomy taxonomy.qza \
-                                			--p-mode exact \
-                                			--p-exclude "$line" \
-                                			--o-filtered-table table${FILTTAX}.qza
-                        done < $TAXREMOVAL
+						NEXT=0
+						cp table${FILTTAX}.qza table${FILTTAX}.tmp$NEXT.qza
+							while IFS= read -r LINE
+							do
+							TAXA=$(echo $LINE | grep -oP '\"\K.*(?=\")')
+							echo "Excluding "$TAXA""
+							NEXT=$((NEXT+1))
+							PREV=$((NEXT-1))
+                                                	crun qiime taxa filter-table \
+                                                        	--i-table table${FILTTAX}.tmp$PREV.qza \
+                                                        	--i-taxonomy taxonomy.qza \
+                                                        	--p-mode exact \
+                                                        	--p-exclude "$TAXA" \
+                                                        	--o-filtered-table table${FILTTAX}.tmp$NEXT 
+                        				done < $TAXREMOVAL
+					mv table${FILTTAX}.tmp$NEXT.qza table${FILTTAX}.qza
 		fi
 fi
+
+ mv table${FILTTAX}.tmp$NEXT.qza table${FILTTAX}.qza
 
 if [[ $FILTCOV == "NA" ]]
         then

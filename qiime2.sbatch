@@ -28,7 +28,7 @@ module load container_env qiime2/2022.08
 #9: core features
 
 #Qiime2 module to run
-MODULE=9
+MODULE=4
 
 #If you change config files alter this line
 bash qiime2_HPC/qiime2.bash $MODULE config.qiime2_HPC.DG19_21
