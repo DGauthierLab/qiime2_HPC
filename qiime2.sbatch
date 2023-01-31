@@ -5,7 +5,7 @@
 #comment in or out modules below as needed
 
 #SBATCH --job-name=qiime2      
-#SBATCH -o qiime2-%j.out
+#SBATCH -o qiime2-%j.log
 #SBATCH --time=00:00:00
 
 enable_lmod
