@@ -2,9 +2,9 @@ CONFIG FILE FOR QIIME2_HPC
 
 ----------Filepaths---------------------------------------------------------------
 
-/cm/shared/courses/gauthier/Microbiome/DG_19_21/fastq					full path to .fastq files
+/cm/shared/courses/gauthier/Microbiome/Sp23_RIPBIO/sourcefiles/fastq/					full path to .fastq files
 
-/cm/shared/courses/gauthier/Microbiome/DG_19_21/metadata/metadata_19_21b.txt		full path to metadata file
+/cm/shared/courses/gauthier/Microbiome/Sp23_RIPBIO/sourcefiles/metadata/metadata_RIPBIO_V1V2_v2.txt		full path to metadata file
 
 __________________________________________________________________________________
 
@@ -32,10 +32,10 @@ paired		qiime tools import --type <paired/single>					paired or single end reads
 see: https://benjjneb.github.io/dada2/
 see: https://docs.qiime2.org/2022.11/tutorials/overview/
 
-245		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
-240             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
-17		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
-20              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
+235		qiime dada2 denoise-paired --p-trunc-len-f <integer>				Right-trim forward sequences
+235             qiime dada2 denoise-paired --p-trunc-len-r <integer>           			Right-trim reverse sequences
+20		qiime dada2 denoise-paired --trim-len-f <integer>				Left-trim (primer) forward sequences
+19              qiime dada2 denoise-paired --trim-len-r <integer>              			Left-trim (primer) reverse sequences
 2		qiime dada2 denoise-paired --p-min-fold-parent-over-abundance <integer>		Set fold-overabundance for chimera detection
 50		qiime diversity alpha-rarefaction --p-steps <integer>				# of sampling steps between min and max depth (below)
 500		qiime diversity alpha-rarefaction --p-min-depth	<integer>			minimum sampling depth for alpha rarefaction
@@ -48,12 +48,12 @@ see: https://docs.qiime2.org/2022.11/tutorials/filtering/
 Integer values for filtering (automatically populate filenames and set cutoffs):
 
 5000           	qiime feature-table filter-samples --p-min-frequency <integer>			Minimum coverage cutoff.  Determine from alpha-rarefaction.
-100                      qiime feature-table filter-features --p-min-frequency <integer>         Minimum cutoff for frequency-based filtration (feature)
+10                      qiime feature-table filter-features --p-min-frequency <integer>         Minimum cutoff for frequency-based filtration (feature)
 
 String values for filtering (values here populate filenames.  MAKE SURE TO MATCH TO SETTINGS BELOW AND VICE VERSA.  Enter NA if not using)
 
-allassigned		FILTTAX filename variable <string>				Descriptive string for taxonomy filtration
-NA			FILTMETA filename variable <string>					Descriptive string for metadata filtration
+allassigned_norick			FILTTAX filename variable <string>				Descriptive string for taxonomy filtration
+nocontrol_valid				FILTMETA filename variable <string>					Descriptive string for metadata filtration
 
 *****Enter NA for taxonomy filtration functions if not using*****
 
@@ -65,31 +65,27 @@ NA		 				qiime taxa filter-seqs --p-include <comma separated string>     uses --
 **File must be formatted with taxa in double quotes, and with space after ; characters
 **e.g. "d__Bacteria; p__Proteobacteria; c__Alphaproteobacteria; o__Rhizobiales; f__Devosiaceae; g__Devosia; __" 
 
-/cm/shared/courses/gauthier/Microbiome/DG_19_21/taxalist.txt		qiime taxa filter-seqs --p-exclude <filepath>			uses --p-mode exact
+/cm/shared/courses/gauthier/Microbiome/Sp23_RIPBIO/sourcefiles/taxalist_norick.txt		qiime taxa filter-seqs --p-exclude <filepath>			uses --p-mode exact
 
 *****requires mySQL where statement for metadata filtration*****
 
-"[Biome] LIKE 'wild caught%' OR [Biome] LIKE 'control'"		qiime feature-table filter-samples --p-where	 <double quoted mySQL where statement>
+"[biome] LIKE 'wild caught%' AND NOT [name]='C-RR231204401-1'"		qiime feature-table filter-samples --p-where	 <double quoted mySQL where statement>
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
-
------------Script 5a: mass-filtering from file list of taxa-----------------------------------------------------------------------------------------------
-
-/cm/shared/courses/gauthier/Microbiome/RIPBIO_F22_microbiome_instructor/taxalist.txt	Filepath to list of taxa to be filtered
 
 ----------Script 6: univariate stats-----------------------------------------------------------------------------------------------------------
 shannon			alpha diversity metric <string>
 bray_curtis		beta diversity metric <string>
-Rp_status		comparison variable for univariate beta diversity comparison <string>		Must match metadata heading
+sex		comparison variable for univariate beta diversity comparison <string>		Must match metadata heading
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 7: multivariate beta diversity stats-----------------------------------------------------------------------------------------------------
-Location*Rp_status	qiime diversity adonis --p-formula <string>					Use var1+var2 for confounders, var1*var2 for crossed terms
+location+rp+sex		qiime diversity adonis --p-formula <string>					Use var1+var2 for confounders, var1*var2 for crossed terms
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 8: ANCOM---------------------------------------------------------------------------------------------------------------------------------      
 see: https://docs.qiime2.org/2022.11/tutorials/moving-pictures/
 
-5			qiime taxa collapse --p-level <integer>			1-Kingdom, 2-Phylum, 3-Class, 4-Order, 5-Family, 6-Genus, 7-Species (no collapse)
+6			qiime taxa collapse --p-level <integer>			1-Kingdom, 2-Phylum, 3-Class, 4-Order, 5-Family, 6-Genus, 7-Species (no collapse)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ----------Script 9: Core Features-------------------------------------------------------------------------------------------------------------------------

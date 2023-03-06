@@ -556,7 +556,7 @@ cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 echo "adonis formula is: $PERMFORM"
 echo "Metadata path is: $METAPATH"
 echo "beta diversity metric is ${DMBETA}"
-echo "files output to ${COREMETRICS}/${DMBETA}-significance_adonis_Loc_Rp${FILTTAX}${FILTCOV}${FILTMETA}.qzv"
+echo "files output to ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}${FILTTAX}${FILTCOV}${FILTMETA}.qzv"
 echo ""
 
 if [ -z $FILTCOV ]
@@ -594,7 +594,7 @@ crun qiime diversity adonis \
   --m-metadata-file $METAPATH \
   --p-formula ${PERMFORM}  \
   --p-permutations 999 \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_Loc_Rp${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv 
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv 
 echo "module 7 completed."
 echo ""
 ;;
