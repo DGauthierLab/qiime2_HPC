@@ -21,16 +21,17 @@ module load container_env qiime2/2022.08
 #2: feature classifier setup
 #3: file import
 #4: DADA2 preprocessing
-#5: filtering and coremetrics
-#6: univariate statistics
-#7: multivariate statistics
-#8: ANCOM
-#9: core features
+#5: taxonomic filtering 
+#6: coverage/metadata filtration and coremetrics
+#7: univariate statistics
+#8: multivariate statistics
+#9: ANCOM
+#10: core features
 
 #Qiime2 module to run
-MODULE=4
+
+MODULE=8
 
 #If you change config files alter this line
-bash qiime2_HPC/qiime2.bash $MODULE config.qiime2_HPC.DG19_21
-
+bash qiime2_HPC/qiime2.bash $MODULE config.qiime2_HPC_RIPBIO_C
 

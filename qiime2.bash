@@ -44,11 +44,13 @@ if [ -n $2 ]; then
         ALPHARSTEPS=$(grep 'qiime diversity alpha-rarefaction --p-steps <integer>' $CONFIG | awk '{print $1;}')
         FILTCOV=$(grep 'qiime feature-table filter-samples --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
         FILTTAX=$(grep 'FILTTAX filename variable <string>' $CONFIG | awk '{print $1;}')
-	FILTFREQF=$(grep 'qiime feature-table filter-features' $CONFIG | awk '{print $1;}')
+	FILTFREQF=$(grep 'qiime feature-table filter-features --p-min-frequency <integer>' $CONFIG | awk '{print $1;}')
+	FILTPREV=$(grep 'qiime feature-table filter-features --p-min-samples' $CONFIG | awk '{print $1;}') 
 	FILTMETA=$(grep 'FILTMETA filename variable <string>' $CONFIG | awk '{print $1;}')
         TFILTEXCON=$(grep 'qiime taxa filter-seqs --p-exclude <comma separated string>' $CONFIG | awk '{print $1;}')
         TFILTINCON=$(grep 'qiime taxa filter-seqs --p-include <comma separated string>' $CONFIG | awk '{print $1;}')
-        TAXREMOVAL=$(grep 'qiime taxa filter-seqs --p-exclude <filepath>' $CONFIG | awk '{print $1;}')
+        TAXREMOVALEX=$(grep 'uses --p-mode exact' $CONFIG | awk '{print $1;}')
+	TAXREMOVALCON=$(grep 'uses --p-mode contains' $CONFIG | awk '{print $1;}')
 	MFILT=$(grep 'qiime feature-table filter-samples --p-where' $CONFIG | grep -oP '\"\K.*(?=\")')
         DMALPHA=$(grep 'alpha diversity metric <string>' $CONFIG | awk '{print $1;}')
         DMBETA=$(grep 'beta diversity metric <string>' $CONFIG | awk '{print $1;}')
@@ -323,51 +325,47 @@ echo "module 4 completed."
 	5)
 cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 
-                echo "Running 5_filtering_and_coremetrics_qiime2" 
+                echo "Running module 5 taxonomic filtration qiime2" 
                 echo ""
-		echo "Minimum coverage set at: $FILTCOV"
-                echo ""
-		echo "Minimum feature frequency set at: $FILTFREQF"
-		echo ""
 		echo "Taxonomic filtration is: $FILTTAX"
-                echo "          excluding reads containing $TFILTEXCON"
+                #echo "          excluding reads containing $TFILTEXCON"
                 echo "          including reads containing $TFILTINCON"
-                echo "          file containing exact matches for exclusion is $TAXREMOVAL"
+                echo "          file containing exact matches for exclusion is $TAXREMOVALEX"
                 echo ""
-		echo "Metadata filtration is: $FILTMETA"
-                echo "          Metadata argument is: --p-where "$MFILT""
+		echo "		file containing contains matches for exclusion is $TAXREMOVALCON"
 		echo ""
-		echo "Excluding exact taxa found in: $TAXREMOVAL"
 		echo ""
-
+		echo "Excluding exact taxa found in: $TAXREMOVALEX"
+		echo ""
+		echo "Excluding contains taxa found in: $TAXREMOVALCON"
 FILTTAX=_$FILTTAX
 FILTMETA=_$FILTMETA
 
 
 if [[ $FILTTAX == "_NA" ]]
         then
-                echo "no taxonomic filters specified.  skipping."
+               echo "no taxonomic filters specified.  skipping."
 		cp table.qza table${FILTTAX}.qza
         else
-
-                if [[ $TFILTEXCON == "NA" ]]
-                        then
-                                echo "--p-exclude (contains) not specified.  skipping."
-				mv table.qza table${FILTTAX}.qza
-
-                                        else
-                                                crun qiime taxa filter-table \
-                                                --i-table table.qza \
-                                                --i-taxonomy taxonomy.qza \
-                                                --p-mode contains \
-                                                --p-exclude ${TFILTEXCON} \
-                                                --o-filtered-table table${FILTTAX}.qza
-                fi
+		cp table.qza table${FILTTAX}.qza
+#
+#                if [[ $TFILTEXCON == "NA" ]]
+#                        then
+#                                echo "--p-exclude (contains) not specified.  skipping."
+#				mv table.qza table${FILTTAX}.qza
+#
+#                                        else
+#                                                crun qiime taxa filter-table \
+#                                                --i-table table.qza \
+#                                                --i-taxonomy taxonomy.qza \
+#                                                --p-mode contains \
+#                                                --p-exclude ${TFILTEXCON} \
+#                                                --o-filtered-table table${FILTTAX}.qza
+#                fi
 
 		if [[ $TFILTINCON == "NA" ]]
                         then
                                 echo "--p-include (contains) not specified. skipping."
-				
                                         else
                                                 crun qiime taxa filter-table \
                                                 --i-table table${FILTTAX}.qza \
@@ -377,13 +375,13 @@ if [[ $FILTTAX == "_NA" ]]
                                                 --o-filtered-table table${FILTTAX}.qza
                 fi
 
-		if [[ $TAXREMOVAL == "NA" ]]
+		if [[ $TAXREMOVALEX == "NA" ]]
 			then
 				echo "p-exclude (exact) not specified. skipping."
 
 				else
-        				echo "Input file is $TAXREMOVAL"
-					[[ -f $TAXREMOVAL ]] && echo "$TAXREMOVAL exists."
+        				echo "Input file is $TAXREMOVALEX"
+					[[ -f $TAXREMOVALEX ]] && echo "$TAXREMOVALEX exists."
 						NEXT=0
 						cp table${FILTTAX}.qza table${FILTTAX}.tmp$NEXT.qza
 							while IFS= read -r LINE
@@ -398,12 +396,77 @@ if [[ $FILTTAX == "_NA" ]]
                                                         	--p-mode exact \
                                                         	--p-exclude "$TAXA" \
                                                         	--o-filtered-table table${FILTTAX}.tmp$NEXT 
-                        				done < $TAXREMOVAL
+                        				done < $TAXREMOVALEX
 					mv table${FILTTAX}.tmp$NEXT.qza table${FILTTAX}.qza
 		fi
-fi
+		if [[ $TAXREMOVALCON == "NA" ]]
+                        then
+                            	echo "p-exclude (contains) not specified. skipping."
 
+                                else
+                                        echo "Input file is $TAXREMOVALCON"
+                                        [[ -f $TAXREMOVALCON ]] && echo "$TAXREMOVALCON exists."
+                                                cp table${FILTTAX}.qza table${FILTTAX}.tmp$NEXT.qza
+                                                        while IFS= read -r LINE
+                                                        do
+                                                        TAXA=$(echo $LINE | grep -oP '\"\K.*(?=\")')
+                                                        echo "Excluding "$TAXA""
+                                                        NEXT=$((NEXT+1))
+                                                        PREV=$((NEXT-1))
+                                                        crun qiime taxa filter-table \
+                                                                --i-table table${FILTTAX}.tmp$PREV.qza \
+                                                                --i-taxonomy taxonomy.qza \
+                                                                --p-mode contains \
+                                                                --p-exclude "$TAXA" \
+                                                                --o-filtered-table table${FILTTAX}.tmp$NEXT 
+                                                        done < $TAXREMOVALCON
+                                        mv table${FILTTAX}.tmp$NEXT.qza table${FILTTAX}.qza
+                fi
+
+fi
  mv table${FILTTAX}.tmp$NEXT.qza table${FILTTAX}.qza
+ rm table${FILTTAX}.tmp*.qza
+
+##Run alpha-rarefaction analysis on taxonomy-filtered data
+##Alpha Rarefaction
+
+if [[ -f "alpha-rarefaction${FILTTAX}.qzv" ]]
+
+then
+    	echo "alpha-rarefaction${FILTTAX}.qzv exists.  skipping"
+
+else
+
+crun qiime diversity alpha-rarefaction \
+  --i-table table${FILTTAX}.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-steps $ALPHARSTEPS \
+  --p-min-depth $ALPHARMIN \
+  --p-max-depth $ALPHARMAX \
+  --m-metadata-file $METAPATH \
+  --o-visualization alpha-rarefaction${FILTTAX}.qzv
+fi
+;;
+
+6)
+echo "module 6 running"
+echo ""
+cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
+
+                echo "Running module 6 metadata/coverage filtration and coremetrics qiime2" 
+                echo ""
+                echo "Minimum coverage set at: $FILTCOV"
+                echo ""
+                echo "Minimum feature frequency set at: $FILTFREQF"
+                echo ""
+                echo "Minimum feature prevalence set at: $FILTPREV"
+                echo ""
+                echo "Metadata filtration is: $FILTMETA"
+                echo "          Metadata argument is: --p-where "$MFILT""
+                echo ""
+
+FILTTAX=_$FILTTAX
+FILTMETA=_$FILTMETA
 
 if [[ $FILTCOV == "NA" ]]
         then
@@ -434,53 +497,67 @@ if [[ $FILTFREQF == "NA" ]]
   				--o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}.qza
 fi
 
+if [[ $FILTPREV == "NA" ]]
+        then
+                echo "feature PREVALENCE cutoff not specified.  skipping."
+                FILTPREV=_$FILTPREV
+                cp table${FILTTAX}${FILTCOV}${FILTFREQF}.qza table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}.qza
+                
+        else
+                FP=$FILTPREV
+                FILTPREV=_$FILTPREV
+                        crun qiime feature-table filter-features \
+                                --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}.qza \
+                                --p-min-samples $FP \
+                                --o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}.qza
+fi
 if [[ $FILTMETA == "_NA" ]]
         then
                 echo "metadata filter not specified"
-		cp table${FILTTAX}${FILTCOV}${FILTFREQF}.qza table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza
+		cp table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}.qza table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza
         else
 		crun qiime feature-table filter-samples \
-                  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}.qza \
+                  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}.qza \
                   --m-metadata-file $METAPATH \
                   --p-where "$MFILT" \
-                  --o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza
+                  --o-filtered-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza
 fi
 
 ##Summarize the new filtered table
 echo "summarizing new filtered table"
 crun qiime feature-table summarize \
-  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
-  --o-visualization table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv \
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
+  --o-visualization table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv \
   --m-sample-metadata-file $METAPATH
 
 ##Alpha and Beta diversity metrics
 echo "performing alpha and beta diversity metrics"
 crun qiime diversity core-metrics-phylogenetic \
   --i-phylogeny rooted-tree.qza \
-  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --p-sampling-depth $COV \
   --m-metadata-file $METAPATH \
-  --output-dir core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
+  --output-dir core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}
 
 ##change filenames to reflect filtering parameters
-cd core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA} &&
+cd core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA} &&
 for f in * ;
-do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qz\2/g") ;
+do mv "$f" $(echo "$f" | sed "s/\(.*\).qz\([av]\)/\1${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qz\2/g") ;
 done
 cd ..
 
 ##Following assumes taxonomic classification has already been run
 crun qiime taxa barplot \
---i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+--i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
 --i-taxonomy taxonomy.qza \
 --m-metadata-file $METAPATH \
---o-visualization barplot${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
+--o-visualization barplot${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv
 
-        echo "Module 5 completed"
+        echo "Module 6 completed"
 ;;
 
-6)
-echo "6 running"
+7)
+echo "7 running"
 echo ""
 
 if [ -z $FILTCOV ]
@@ -509,9 +586,15 @@ echo "feature frequency filter not specified"
 else
 FILTFREQF=_$FILTFREQF
 fi
+if [ -z $FILTPREV ]
+then
+echo "feature frequency filter not specified"
+else
+FILTPREV=_$FILTPREV
+fi
 
 
-COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}
 
 cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 echo "Metadata path is: $METAPATH"
@@ -520,9 +603,9 @@ echo ""
 ##RUNSCRIPTS, don't change
 
 crun qiime diversity alpha-group-significance \
-  --i-alpha-diversity ${COREMETRICS}/${DMALPHA}_vector${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-alpha-diversity ${COREMETRICS}/${DMALPHA}_vector${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --m-metadata-file ${METAPATH} \
-  --o-visualization ${COREMETRICS}/${DMALPHA}-group-significance${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
+  --o-visualization ${COREMETRICS}/${DMALPHA}-group-significance${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv
 
 ##Beta group significance comparisons
 #Performs both permdisp routine for dispersion analysis and permanova for centroids
@@ -531,32 +614,32 @@ echo "beta diversity metric is ${DMBETA}"
 echo "files output to ${COREMETRICS}/${DMBETA}-significance_perm<disp/anova>_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv"
 echo ""
 crun qiime diversity beta-group-significance \
-  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --m-metadata-file ${METAPATH} \
   --m-metadata-column ${BETACOMPVAR} \
   --p-method 'permdisp' \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permdisp_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv \
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permdisp_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv \
   --p-pairwise
 
 crun qiime diversity beta-group-significance \
-  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --m-metadata-file ${METAPATH} \
   --m-metadata-column ${BETACOMPVAR} \
   --p-method 'permanova' \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permanova_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv \
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_permanova_${BETACOMPVAR}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv \
   --p-pairwise
 echo "module 6 completed."
 ;;
 
-7)
+8)
 
-echo "7 running"
+echo "8 running"
 echo ""
 cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
-echo "adonis formula is: $PERMFORM"
+echo "adonis formula is: ${PERMFORM}"
 echo "Metadata path is: $METAPATH"
 echo "beta diversity metric is ${DMBETA}"
-echo "files output to ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}${FILTTAX}${FILTCOV}${FILTMETA}.qzv"
+echo "files output to ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}${FILTTAX}${FILTCOV}${FILTPREV}${FILTMETA}.qzv"
 echo ""
 
 if [ -z $FILTCOV ]
@@ -586,22 +669,28 @@ echo "feature frequency filter not specified"
 else
 FILTFREQF=_$FILTFREQF
 fi
+if [ -z $FILTPREV ]
+then
+echo "feature frequency filter not specified"
+else
+FILTPREV=_$FILTPREV 
+fi
 
-COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}
 
 crun qiime diversity adonis \
-  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-distance-matrix ${COREMETRICS}/${DMBETA}_distance_matrix${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --m-metadata-file $METAPATH \
   --p-formula ${PERMFORM}  \
   --p-permutations 999 \
-  --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv 
-echo "module 7 completed."
+  --o-visualization ${COREMETRICS}/${DMBETA}-significance_adonis_${PERMFORM}${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv 
+echo "module 8 completed."
 echo ""
 ;;
 
-8)
+9)
 
-echo "8 running"
+echo "9 running"
 cd dada2_${FTRIM}_${RTRIM}_${FTRUNC}_${RTRUNC}_p${CHIMERA}
 echo "Metadata path is: $METAPATH"
 echo "beta diversity metric is ${DMBETA}"
@@ -636,51 +725,57 @@ echo "feature frequency filter not specified"
 else
 FILTFREQF=_$FILTFREQF
 fi
+if [ -z $FILTPREV ]
+then
+echo "feature frequency filter not specified"
+else
+FILTPREV=_$FILTPREV 
+fi
 
-COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}
 
 ##RUNSCRIPTS, don't change
 
 crun qiime taxa collapse \
-  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --i-taxonomy taxonomy.qza \
   --p-level ${COLV} \
-  --o-collapsed-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza
+  --o-collapsed-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza
 
 ##ANCOM analysis
 
 crun qiime composition add-pseudocount \
---i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
---o-composition-table comp-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza
+--i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
+--o-composition-table comp-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza
 
 crun qiime composition ancom \
---i-table comp-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+--i-table comp-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
 --m-metadata-file $METAPATH \
 --m-metadata-column $BETACOMPVAR \
---o-visualization ancom-$BETACOMPVAR-${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
+--o-visualization ancom-$BETACOMPVAR-${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv
 
 #ANCOM analysis at specific taxonomic level
 
 crun qiime taxa collapse \
---i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+--i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
 --i-taxonomy taxonomy.qza \
 --p-level ${COLV} \
---o-collapsed-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza 
+--o-collapsed-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza 
 
 crun qiime composition add-pseudocount \
---i-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
---o-composition-table comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza 
+--i-table collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
+--o-composition-table comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza 
 
 crun qiime composition ancom \
---i-table comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+--i-table comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
 --m-metadata-file $METAPATH \
 --m-metadata-column $BETACOMPVAR \
---o-visualization comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv
-echo "module 8 completed."
+--o-visualization comp-collapseLevel${COLV}-table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv
+echo "module 9 completed."
 ;;
 
-9)
-echo "module 9 running.  calculating core features"
+10)
+echo "module 10 running.  calculating core features"
 echo ""
 echo "core features calculated between $COREMIN and $COREMAX proportion of samples in $CORESTEPS steps"
 echo ""
@@ -715,14 +810,21 @@ else
 FILTFREQF=_$FILTFREQF
 fi
 
-COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}
+if [ -z $FILTPREV ]
+then
+echo "feature frequency filter not specified"
+else
+FILTFREQF=_$FILTPREV
+fi
+
+COREMETRICS=core-metrics-results${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}
 
 crun qiime feature-table core-features\
-  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qza \
+  --i-table table${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qza \
   --p-min-fraction $COREMIN \
   --p-max-fraction $COREMAX \
   --p-steps $CORESTEPS \
-  --o-visualization ${COREMETRICS}/corefeatures${FILTTAX}${FILTCOV}${FILTFREQF}${FILTMETA}.qzv 
+  --o-visualization ${COREMETRICS}/corefeatures${FILTTAX}${FILTCOV}${FILTFREQF}${FILTPREV}${FILTMETA}.qzv 
 
 
 ;;
